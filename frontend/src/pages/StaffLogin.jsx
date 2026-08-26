@@ -16,7 +16,7 @@ export default function StaffLogin() {
           <div className="h-9 w-9 rounded-lg bg-slate-900 flex items-center justify-center">
             <Building2 className="h-5 w-5 text-white" />
           </div>
-          <span className="font-heading font-extrabold text-lg tracking-tight text-slate-900">PropTriage</span>
+          <span className="font-heading font-extrabold text-lg tracking-tight text-slate-900">CloseLoop</span>
         </div>
 
         <div className="max-w-md mx-auto w-full">
@@ -25,7 +25,7 @@ export default function StaffLogin() {
             Welcome back
           </h1>
           <p className="mt-4 text-base leading-relaxed text-slate-600">
-            Sign in to manage resident requests, triage issues, and coordinate your maintenance teams.
+            Sign in to manage resident requests, triage issues, and follow every problem through to resolution.
           </p>
 
           <button
@@ -64,7 +64,7 @@ export default function StaffLogin() {
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent" />
         <div className="absolute bottom-10 left-10 right-10 text-white">
           <p className="font-heading text-2xl font-bold tracking-tight">Rivergate Commons</p>
-          <p className="text-white/80 mt-1">Resident issue triage, done right.</p>
+          <p className="text-white/80 mt-1">Close problems, not tickets.</p>
         </div>
       </div>
     </div>

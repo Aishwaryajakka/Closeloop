@@ -20,6 +20,13 @@ Phase 1 (skeleton, NO AI): MVP web app for multifamily property management. Resi
 - Issues(id, property_id, resident_id, unit, category, description, desired_outcome, priority[P0-P3], lane[RESOLVE/ACTION/REVIEW], assigned_team, status[open/in_progress/confirmation_pending/resolved/reopened], human_reason, created_at, resolved_at, resident_confirmed, resolution_attempts)
 - Interactions(id, issue_id, resident_id, sender, message, created_at, detected_intent, detected_sentiment)
 
+## Implemented — Step 2 (2026-06): Property Knowledge Base + rebrand
+- Rebranded PropTriage → **CloseLoop** ("Close problems, not tickets." / "Every resident issue, followed through to resolution.") across resident portal, staff login, sidebar, page title.
+- Property Knowledge page (/staff/knowledge) with staff sidebar nav: table of name, type, uploaded date, processing status; upload / replace / remove.
+- Backend: Emergent object storage (EMERGENT_LLM_KEY + INTEGRATION_PROXY_URL) for PDF/DOCX/TXT; on upload extracts text + splits into chunks (document_chunks, embedding field reserved) → processing_status pending/processing/ready/failed. Non-blocking via run_in_threadpool. Endpoints: GET/POST /api/documents, PUT /replace, DELETE (soft-delete), GET /download.
+- Seeded 4 demo PDF policy docs (parking, pets, amenities, maintenance/emergencies), all indexed/ready.
+- Tested: 48/48 backend + all frontend flows pass. No AI auto-answering yet (per scope).
+
 ## Implemented (2026-06)
 - Resident portal: submit request (optional category), track requests by name+unit with status badges.
 - Public issue creation auto-creates resident + issue + resident interaction; server-side required-field validation.

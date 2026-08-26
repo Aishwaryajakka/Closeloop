@@ -6,6 +6,7 @@ import AuthCallback from "@/pages/AuthCallback";
 import ResidentPortal from "@/pages/ResidentPortal";
 import StaffLogin from "@/pages/StaffLogin";
 import StaffDashboard from "@/pages/StaffDashboard";
+import PropertyKnowledge from "@/pages/PropertyKnowledge";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -38,6 +39,14 @@ function AppRouter() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/staff/knowledge"
+        element={
+          <ProtectedRoute>
+            <PropertyKnowledge />
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
@@ -49,7 +58,7 @@ function App() {
       <BrowserRouter>
         <AuthProvider>
           <AppRouter />
-          <Toaster position="top-right" richColors />
+          <Toaster position="bottom-right" richColors />
         </AuthProvider>
       </BrowserRouter>
     </div>

@@ -83,7 +83,7 @@ export default function ResidentPortal() {
               <Building2 className="h-5 w-5 text-white" />
             </div>
             <div className="leading-tight">
-              <p className="font-heading font-extrabold tracking-tight text-slate-900">PropTriage</p>
+              <p className="font-heading font-extrabold tracking-tight text-slate-900">CloseLoop</p>
               <p className="text-xs text-slate-500">{config?.property?.name || "Resident Portal"}</p>
             </div>
           </div>
@@ -103,7 +103,7 @@ export default function ResidentPortal() {
             How can we help?
           </h1>
           <p className="mt-3 text-base text-slate-600">
-            Tell us what's going on in your unit. No account needed.
+            Tell us what's going on in your unit. No account needed &mdash; every issue is followed through to resolution.
           </p>
         </div>
 

@@ -1,0 +1,54 @@
+{
+  "summary": "Step 2 (Property Knowledge Base) full backend + frontend E2E testing on the public preview URL. Backend: 24 new pytest cases in /app/backend/tests/test_documents.py covering /api/config document_types, GET /api/documents (auth via Bearer + cookie, 401 unauth/invalid token, 4 seeded demo docs all ready with chunk_count>0, sort order, no _id), POST /api/documents (TXT + generated PDF -> ready with chunks, persistence check, 400 on .exe/.png/no-extension, 400 on invalid doc_type, 422 on missing form fields), PUT /replace (new storage_path, new original_filename, newer uploaded_at, higher chunk_count, downloadable new bytes, 404, 400 bad ext, 401), GET /download (TXT bytes exact match + content-type, seeded PDF %PDF magic + application/pdf, 401, 404), DELETE (soft-delete verified directly in Mongo: record kept with is_deleted=true, document_chunks removed, doc gone from list, download/replace then 404, 404 on unknown id, 401). 24/24 passed. Step 1 regression suite (backend_test.py) re-run: 24/24 passed - including the previously failing assigned_team validation test, which is now fixed. Frontend: /staff/knowledge lists the 4 demo docs with name/original filename/type/uploaded date/Ready badge, sidebar nav switches /staff <-> /staff/knowledge, upload dialog (doctype Select + name + file) uploads and the row appears with Ready + success toast (POST took 0.33s), client-side validation toast when no file/type, replace flow updates original_filename and keeps name, delete confirm dialog (cancel keeps row, confirm removes it), refresh button, download opens the /api/documents/{id}/download tab, unauthenticated /staff/knowledge redirects to /staff/login. Staff dashboard regression (stats=5, 5 issue rows, search, status filters, detail sheet, logout) all pass. Rebrand verified: 'CloseLoop' on resident portal, staff login and staff sidebar; no 'PropTriage' string anywhere. No blocking issues found; all findings are minor/architectural.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/documents, PUT /api/documents/{id}/replace, GET /api/documents/{id}/download", "issue": "Object storage calls (init_storage/put_object/get_object) use the synchronous `requests` library inside async endpoints, and extract_text/chunk_text + insert_many run inline in the request. This blocks the FastAPI event loop for the whole upload+parse duration, stalling all other API requests. One UI upload during the first test run was still in flight after 6s (later runs 0.33s). Move storage calls to httpx.AsyncClient / run_in_threadpool and push processing to a background task."},
+      {"endpoint": "POST /api/documents", "issue": "processing_status 'pending'/'processing' are never observable by clients because process_document runs synchronously before the response returns - the UI's Pending/Processing badges are effectively dead states. Either return immediately with pending + background processing, or drop the intermediate states."},
+      {"endpoint": "POST /api/documents", "issue": "An empty (0-byte) or text-less file is accepted with HTTP 200 and stored with processing_status='failed', chunk_count=0. There is no size/emptiness guard, no max-upload-size limit, and no re-process/retry endpoint - staff can only fix it via replace. Recommend rejecting empty files with 400 and adding a max size check."},
+      {"endpoint": "DELETE /api/documents/{id}", "issue": "Query does not filter is_deleted, so deleting an already soft-deleted document returns 200 {'ok': true} instead of 404 (download and replace correctly 404 for deleted docs). Inconsistent."},
+      {"endpoint": "POST /api/documents", "issue": "File type is validated only on the filename extension; content is never sniffed, so a renamed binary (e.g. exe -> .txt) is stored and yields a 'failed'/garbage-text document."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "PropertyKnowledge upload dialog", "issue": "Radix a11y console warning on every open: 'Missing `Description` or `aria-describedby={undefined}` for {DialogContent}'. Add a DialogDescription (or aria-describedby).", "selector": "[data-testid=\"upload-dialog\"]", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Property Knowledge", "issues": ["Sonner toasts render top-right and overlap the header 'Refresh' / 'Upload Document' buttons, briefly covering them (see screenshot). Consider bottom-right / top-center placement.", "Upload dialog Submit button shows no per-file progress; for large PDFs the synchronous backend processing means the dialog can sit on 'Uploading...' with no feedback beyond the spinner.", "Table has no empty-state variant issue, but there is no chunk_count column - staff can't see how much of a document was indexed even though the backend tracks it."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_documents.py",
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/documents_results.xml",
+    "/app/test_reports/pytest/regression_results.xml"
+  ],
+  "action_items": [
+    "Make storage I/O + text extraction non-blocking (async httpx or run_in_threadpool + background processing) so uploads don't stall the event loop.",
+    "Reject 0-byte / non-extractable uploads with 400 and add a max file size limit; add a re-process action for 'failed' documents.",
+    "Filter is_deleted in DELETE /api/documents/{id} so a repeat delete returns 404.",
+    "Add DialogDescription to the upload dialog to clear the Radix a11y warning.",
+    "Move toast placement so it does not overlap the header action buttons."
+  ],
+  "critical_code_review_comments": [
+    "server.py is now 650 lines and mixes auth, issues and documents; split the document routes + storage/extraction helpers into their own module before it grows further.",
+    "init_storage caches a module-global _storage_key with no lock; with concurrent uploads several threads can re-init simultaneously. Harmless today but worth a lock/one-time init.",
+    "process_document deletes existing chunks only when new chunks exist; if a replace yields 0 chunks the OLD chunks remain in document_chunks while the doc is marked 'failed' (stale index data). Delete chunks unconditionally before re-chunking.",
+    "resolve_property falls back to properties.find_one({}) - non-deterministic once there is more than one property (same finding as iteration 1 for issues).",
+    "Storage paths are never garbage-collected: replace and soft-delete both orphan the previous object in Emergent object storage.",
+    "Positive: all responses use {'_id': 0}, auth is enforced on every document route, extension/doc_type validation returns 400 with useful detail, and download sets the stored content-type."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_documents.py",
+    "/app/backend/tests/backend_test.py"
+  ],
+  "success_rate": {"backend": "100% (48/48: 24 document tests + 24 Step 1 regression)", "frontend": "100% of tested flows (1 flaky slow first upload)"},
+  "seed_data_creation": "Created TEST_-prefixed documents (TXT + PDF) via API and UI; all removed from property_documents/document_chunks afterwards. Final DB state verified restored: 4 active seeded demo docs (all ready, chunk_count=2), 8 chunks, 5 issues, 50 residents. Seeded session test_session_step2_demo was consumed by the UI logout test and has been RE-INSERTED (expires in 30 days) - it is valid again.",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "No app passwords (Google OAuth). Session injection works: user_id test-user-step2 / session_token test_session_step2_demo (email aishwaryajakka@hotmail.com) in db test_database. NOTE: exercising the UI logout button deletes this session server-side - re-upsert it in user_sessions before the next run.",
+  "context_for_next_testing_agent": "Backend suites: /app/backend/tests/test_documents.py (Step 2 docs) and /app/backend/tests/backend_test.py (Step 1). Both read the session token from env TEST_SESSION_TOKEN (default test_session_step2_demo) and self-clean TEST_-prefixed data. Run with: cd /app/backend && python -m pytest tests/ -v -p no:randomly. PDF fixtures are generated with reportlab (installed). Playwright staff tests need context.add_cookies session_token on domain triage-skeleton.preview.emergentagent.com (httpOnly, secure, sameSite None) - and avoid clicking logout-btn unless you re-insert the session afterwards. Upload flow can be slow on the first request after idle (sync storage init); wait on the POST /api/documents response rather than a fixed timeout.",
+  "rca_of_the_issue": "Flaky slow upload RCA: the document pipeline is fully synchronous inside the async request handler - init_storage/put_object use blocking `requests`, then extract_text + chunk_text + insert_many run inline. The first upload after startup also pays the storage /init round trip. Under the event loop this serializes all traffic, which is why the first UI upload had not returned after 6s while identical later uploads completed in 0.33s. Functionally correct, but it will regress badly with large PDFs or concurrent staff uploads."
+}

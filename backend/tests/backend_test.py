@@ -11,7 +11,8 @@ if not base_url:
     raise RuntimeError("REACT_APP_BACKEND_URL missing")
 BASE_URL = base_url.rstrip("/")
 
-SESSION_TOKEN = "test_session_qa_1"  # injected into mongo (users/user_sessions) per /app/auth_testing.md
+SESSION_TOKEN = os.environ.get("TEST_SESSION_TOKEN", "test_session_step2_demo")
+SESSION_EMAIL = os.environ.get("TEST_SESSION_EMAIL", "aishwaryajakka@hotmail.com")
 
 
 @pytest.fixture(scope="session")
@@ -65,7 +66,7 @@ class TestAuth:
         r = auth.get(f"{BASE_URL}/api/auth/me")
         assert r.status_code == 200
         d = r.json()
-        assert d["email"] == "qa.staff@example.test"
+        assert d["email"] == SESSION_EMAIL
         assert "_id" not in d
 
     def test_invalid_token(self, client):
