@@ -8,6 +8,7 @@ import StaffLogin from "@/pages/StaffLogin";
 import StaffDashboard from "@/pages/StaffDashboard";
 import PropertyKnowledge from "@/pages/PropertyKnowledge";
 import TrendInsights from "@/pages/TrendInsights";
+import DemoMode from "@/pages/DemoMode";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -53,6 +54,14 @@ function AppRouter() {
         element={
           <ProtectedRoute>
             <TrendInsights />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/staff/demo"
+        element={
+          <ProtectedRoute>
+            <DemoMode />
           </ProtectedRoute>
         }
       />

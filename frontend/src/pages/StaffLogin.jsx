@@ -64,8 +64,8 @@ export default function StaffLogin() {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent" />
         <div className="absolute bottom-10 left-10 right-10 text-white">
-          <p className="font-heading text-2xl font-bold tracking-tight">Rivergate Commons</p>
-          <p className="text-white/80 mt-1">Close problems, not tickets.</p>
+          <p className="font-heading text-2xl font-bold tracking-tight">Riverside Luxury Residences</p>
+          <p className="text-white/80 mt-1">AI handles the routine. Humans handle what matters.</p>
         </div>
       </div>
     </div>

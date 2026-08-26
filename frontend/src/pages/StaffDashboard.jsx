@@ -86,10 +86,16 @@ export default function StaffDashboard() {
   const openIssue = (id) => { setSelectedId(id); setSheetOpen(true); };
 
   const headerAction = (
-    <button data-testid="refresh-btn" onClick={load}
-      className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3.5 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors duration-200">
-      <RefreshCw className="h-4 w-4" /> Refresh
-    </button>
+    <div className="flex items-center gap-2">
+      <a href="/staff/demo" data-testid="run-demo-btn"
+        className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 hover:bg-amber-600 text-white px-3.5 py-2 text-sm font-semibold transition-colors duration-200">
+        ▶ Run Demo
+      </a>
+      <button data-testid="refresh-btn" onClick={load}
+        className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3.5 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors duration-200">
+        <RefreshCw className="h-4 w-4" /> Refresh
+      </button>
+    </div>
   );
 
   return (
@@ -181,7 +187,7 @@ export default function StaffDashboard() {
                 {loading ? (
                   <TableRow><TableCell colSpan={9} className="text-center py-16 text-slate-400">Loading…</TableCell></TableRow>
                 ) : tabFiltered.length === 0 ? (
-                  <TableRow><TableCell colSpan={9} className="text-center py-16 text-slate-400"><Inbox className="h-8 w-8 mx-auto mb-3 text-slate-300" />No issues here.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="text-center py-16 text-slate-400"><Inbox className="h-8 w-8 mx-auto mb-3 text-slate-300" /><p className="font-heading font-semibold text-slate-500">You're all caught up</p><p className="text-sm">Nothing in this queue right now.</p></TableCell></TableRow>
                 ) : (
                   tabFiltered.map((i) => (
                     <TableRow key={i.id} data-testid={`issue-row-${i.id}`} onClick={() => openIssue(i.id)}
