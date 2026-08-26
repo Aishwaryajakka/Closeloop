@@ -28,3 +28,18 @@ export function fmtDate(iso) {
   const d = new Date(iso);
   return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
+
+export function attentionCls(score) {
+  if (score >= 80) return "bg-red-100 text-red-700 border border-red-200";
+  if (score >= 50) return "bg-amber-100 text-amber-700 border border-amber-200";
+  if (score >= 25) return "bg-blue-100 text-blue-700 border border-blue-200";
+  return "bg-slate-100 text-slate-600 border border-slate-200";
+}
+
+export function fmtDuration(seconds) {
+  if (!seconds || seconds < 0) return "—";
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+  if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
+  if (seconds < 86400) return `${Math.round(seconds / 3600)}h`;
+  return `${Math.round(seconds / 86400)}d`;
+}

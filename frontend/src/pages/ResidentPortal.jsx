@@ -73,6 +73,16 @@ export default function ResidentPortal() {
     await loadRequests(name.trim(), unit.trim());
   };
 
+  const confirmResolution = async (issueId, confirmed) => {
+    try {
+      await api.post(`/issues/${issueId}/confirm`, { confirmed });
+      toast.success(confirmed ? "Thanks for confirming!" : "We've reopened your request — help is on the way.");
+      await loadRequests(name.trim(), unit.trim());
+    } catch (e) {
+      toast.error("Something went wrong. Please try again.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Top bar */}
@@ -222,6 +232,34 @@ export default function ResidentPortal() {
                         <span className="text-xs text-slate-400">Unit {req.unit}</span>
                       </div>
                       <p className="mt-1 text-sm text-slate-800 line-clamp-2">{req.description}</p>
+                      {req.auto_response && (
+                        <div data-testid={`resident-answer-${req.id}`} className="mt-2 rounded-lg bg-emerald-50 border border-emerald-200 p-2.5">
+                          <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-700 mb-0.5">Answer</p>
+                          <p className="text-sm text-slate-700">{req.auto_response}</p>
+                          {req.answer_source && <p className="mt-1 text-xs text-emerald-700">Source: {req.answer_source}</p>}
+                        </div>
+                      )}
+                      {!req.auto_response && req.acknowledgement && (
+                        <p data-testid={`resident-ack-${req.id}`} className="mt-2 text-sm text-blue-700">{req.acknowledgement}</p>
+                      )}
+                      {req.status === "confirmation_pending" && (
+                        <div data-testid={`resident-confirm-${req.id}`} className="mt-3 rounded-lg border border-violet-200 bg-violet-50 p-3">
+                          <p className="text-sm font-semibold text-violet-900">Is everything working now?</p>
+                          <div className="mt-2 flex gap-2">
+                            <button data-testid={`confirm-yes-${req.id}`} onClick={() => confirmResolution(req.id, true)}
+                              className="rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-3.5 py-1.5 transition-colors duration-200">
+                              Yes, it's resolved
+                            </button>
+                            <button data-testid={`confirm-no-${req.id}`} onClick={() => confirmResolution(req.id, false)}
+                              className="rounded-full bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-sm font-semibold px-3.5 py-1.5 transition-colors duration-200">
+                              No, I still need help
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {req.status === "reopened" && (
+                        <p data-testid={`resident-reopened-${req.id}`} className="mt-2 text-sm text-orange-700 font-medium">We've reopened your request — a specialist will follow up here shortly.</p>
+                      )}
                       <p className="mt-2 text-xs text-slate-400">{fmtDate(req.created_at)}</p>
                     </div>
                     <StatusBadge status={req.status} />

@@ -1,0 +1,71 @@
+{
+  "summary": "Independently verified Steps 5-12 + the Step-4 reply-path fix end-to-end with real Claude Sonnet 4.6 calls. Created /app/backend/tests/test_steps5_12.py (34 pytest cases, ALL PASS in 102s, -n 0). CHECKPOINT 6 CONFIRMED: POST /api/issues 'QA_Sink/888 kitchen sink leaking' -> ACTION + Maintenance + ack; staff PATCH status=resolved -> confirmation_pending + 'Is everything working now?' AI message; POST /confirm {confirmed:true} -> resolved + resident_confirmed=true + confirmed_at; then the SAME name+unit posting 'The sink you fixed yesterday is leaking again.' returned the SAME issue id with matched_existing=true, status=reopened, lane=REVIEW, failed_resolution=true, resolution_attempts=1, resident_confirmed=false, 'Previous resolution failed' system message, and POST /residents/requests still returns exactly 1 request (NO duplicate). CHECKPOINT 7 NO-branch CONFIRMED (QA_Heat/889): confirmation_pending -> confirm {confirmed:false} -> reopened, resident_confirmed=false, lane REVIEW, attempts=1, repeat_complaint populated, score 88. CHECKPOINT 5 CONFIRMED: uploaded two contradictory Parking Policy docs (both processed to ready), then 'Can my guest park overnight?' -> NOT auto-answered, lane REVIEW, policy_conflict=true, conflicting_documents=[Parking Policy, QA_ParkingA, QA_ParkingB], attention reason 'Policy conflict between documents'; UI rendered 'REVIEW — POLICY CONFLICT' banner with the conflicting doc chips. Step 5 citations: pool-hours -> RESOLVE/resolved with auto_response 'The pool closes at 10:00 PM daily.', answer_source 'Amenity Rules', answer_passage present, confidence high; wifi-password -> REVIEW, no auto_response. Step 8: rooftop-terrace-fee -> REVIEW with suggested_response (not auto-sent) + similar_cases. Step 10: every issue has human_attention_score 0-100 + non-empty attention_reasons; P0 flood = 100 with 6 reasons; pool RESOLVE = 6. Step 9: /api/dashboard returns all 8 metrics as ints and requires auth. Step 12: 3 residents x same category detected as a shared incident; /incidents/merge tags all issues with incident_id and merged issues are excluded from subsequent detect; merge with <2 ids -> 400. Step-4 reply fix CONFIRMED: reply escalating to emergency now runs full triage (P0, is_emergency=true, lane REVIEW, all 6 review_summary fields, score>=90) and a subsequent low-severity follow-up did NOT downgrade priority or clear is_emergency (monotonic). Frontend (Playwright, injected session cookie): /staff heading 'What needs your attention?', all 8 stat cards, Needs Your Attention (6 cards), all 6 tabs with correct lane filtering (REVIEW 11/ACTION 5/AI Resolved 1/Failed Resolutions 2), Score column on every row, reopened row highlighted bg-orange-50, shared-incident-banner; detail sheet rendered failed-resolution-banner, repeat-complaint-banner, policy-conflict-banner, attention-score+reasons, resolve-outcome(source+confidence), action-outcome, review-outcome (6 labeled fields), emergency-banner, suggested-response, similar-cases, ai-understanding, interaction-timeline; resident portal rendered resident-confirm/confirm-yes/confirm-no, and clicking 'No, I still need help' reopened the request live (badge -> Reopened, toast). 0 console/UI errors. All QA_ test data, temp docs+chunks and the leftover 'Noise Policy Test' doc removed; DB back to exactly 5 issues / 50 residents / 4 ready documents / 8 chunks / 0 incidents.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "GET /api/incidents/detect",
+        "issue": "Shared-incident detection is far too coarse: it groups purely by the broad AI `category` over a 24h window with no similarity check and no real 'short window' bound. With 8 unrelated maintenance issues (leaking sink, flickering light, ceiling water intrusion, no water) it reported ONE incident: count 8, resident_count 8, window_minutes 490 — and the staff dashboard rendered 'POSSIBLE SHARED INCIDENT — MAINTENANCE ... within a 490-minute window'. It also grouped 'wifi password', 'rooftop terrace fee' and 'dishwasher' as an 'AMENITY' incident. Spec requires >=3 residents reporting a SIMILAR issue in a SHORT window: add description/entity similarity (or an AI similarity check) and cap the window (e.g. <=180 min)."
+      },
+      {
+        "endpoint": "POST /api/issues (Resolution Memory reopen) and POST /api/issues/{id}/confirm {confirmed:false}",
+        "issue": "Reopened issues are set to lane=REVIEW but review_summary is never generated, so the highest-attention items (score 88-92) show NO Staff Review Brief in the detail sheet — verified: QA_Sink reopened sheet had failed-resolution + repeat-complaint banners but review-outcome was missing. Every REVIEW-lane issue should carry a brief; run generate_review_summary (or run_triage) on the reopen paths."
+      },
+      {
+        "endpoint": "internal build_repeat_complaint()",
+        "issue": "contact_count is off by one because it does len(resident_msgs)+1 while the triggering resident interaction has already been inserted. Result: the same sheet shows 'Resident contacts: 3' (issue.contact_count) and 'Contact count: 4' (repeat_complaint.contact_count) — contradictory numbers to staff."
+      },
+      {
+        "endpoint": "internal build_repeat_complaint()",
+        "issue": "intervention_worked is hardcoded False, so Step 11's 'whether prior intervention worked' is not actually derived (it is always 'No', even for the first repeat). Derive it from resident_confirmed / prior resolution history."
+      },
+      {
+        "endpoint": "POST /api/issues/{id}/reply",
+        "issue": "run_triage on a follow-up overwrites `category` from the latest message only, so an issue can drift category (a dishwasher/maintenance issue became 'amenity' after a 'what time does the pool close?' follow-up). This corrupts incident grouping and lane analytics; category should be sticky or only widened, not replaced by an off-topic follow-up."
+      },
+      {
+        "endpoint": "internal compute_attention()",
+        "issue": "A REVIEW-lane POLICY CONFLICT scored only 24 (below routine P1 ACTION items at 38), so genuine blocked-answer conflicts sort near the bottom of REVIEW. Suggest a larger policy_conflict weight or a floor."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Resident portal — My Requests (reopened request)",
+        "issues": ["After the resident clicks 'No, I still need help' the card still shows only the stale acknowledgement ('sent to Maintenance'); no new message confirms the reopen/next step (only a transient toast)."]
+      },
+      {
+        "screen": "Staff issue detail Sheet (reopened issue)",
+        "issues": ["'Resident contacts: 3' (Previous Resolution Failed card) contradicts 'Contact count: 4' (Repeat Complaint card) in the same sheet."]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_steps5_12.py",
+    "/app/test_reports/pytest/steps5_12.xml"
+  ],
+  "action_items": [
+    "Tighten /api/incidents/detect: require description/entity similarity (not just broad category) and a short window (<=~3h) before declaring a shared incident — currently produces false-positive banners on the staff homepage.",
+    "Generate review_summary when an issue is reopened (Resolution Memory match and confirm=false) so REVIEW-lane reopened issues render a Staff Review Brief.",
+    "Fix the off-by-one in build_repeat_complaint().contact_count and derive intervention_worked instead of hardcoding False.",
+    "Stop replacing `category` from an off-topic follow-up reply (keep original category or require higher confidence).",
+    "Consider raising the attention weight for policy_conflict so conflicts do not sort below routine P1 ACTION items."
+  ],
+  "critical_code_review_comments": [
+    "server.py is 1343 lines with triage, documents, auth, dashboard and incidents in one module — split into routers/services.",
+    "GET /api/dashboard runs one interactions query per issue inside a loop (N+1) to compute median first-response; use a single aggregation.",
+    "retrieve_chunks() still loads up to 3000 chunks into memory and scores them in Python on every triage call — move to a Mongo text index / embeddings.",
+    "detect_incidents filters {'incident_id': None}, which relies on the field always being explicitly null; use {'$in': [None]} plus {'incident_id': {'$exists': false}} to be safe for legacy docs."
+  ],
+  "updated_files": ["/app/backend/tests/test_steps5_12.py"],
+  "success_rate": {"backend": "100% (34/34 pytest cases incl. CHECKPOINT 5/6/7, Steps 5/8/9/10/12 and the reply-path fix)", "frontend": "100% of asserted Step 9/11/5/7 UI elements rendered; 1 missing brief is a backend data gap, not a UI bug"},
+  "seed_data_creation": "Created 12 temporary residents/issues prefixed QA_ (QA_Sink, QA_Heat, QA_Pool, QA_Wifi, QA_Guest, QA_Flood, QA_Precedent, QA_Inc1-3, QA_Reply, QA_Confirm) + 2 temp Parking Policy docs (QA_ParkingA/B). ALL deleted (issues, interactions, residents, docs, chunks, incidents). Also removed a leftover 'Noise Policy Test' document from a previous iteration. DB verified: 5 issues (lanes + attention scores intact, no backfill needed), 50 residents, 4 ready documents, 8 chunks, 0 incidents.",
+  "should_call_test_agent_after_fix": true,
+  "should_main_agent_self_test": false,
+  "test_credentials": "Session injection: cookie session_token=test_session_step2_demo (domain triage-skeleton.preview.emergentagent.com) or Authorization: Bearer test_session_step2_demo (user test-user-step2 / aishwaryajakka@hotmail.com)",
+  "context_for_next_testing_agent": "Run `pytest /app/backend/tests/test_steps5_12.py -v -n 0` (~102s, real AI). It tracks created ids in CREATED_ISSUES/CREATED_DOCS but does NOT delete them — after running, delete residents matching ^QA_ plus their issues/interactions and any QA_ documents+document_chunks (a ready-made mongo snippet pattern is in iteration_5). For frontend, add the session_token cookie then goto /staff; useful search terms per feature: QA_Sink (reopened banners), QA_Guest (policy conflict), QA_Pool (resolve citations), QA_Flood (emergency). Open defects are all in the minor list — the make-or-break CHECKPOINT 6 no-duplicate/reopen behaviour and the Step-4 reply-path fix from iteration 4 are both now verified working.",
+  "rca_of_the_issue": "Incident false positives: detect_incidents() groups only on the coarse AI `category` string within a 24-hour cutoff and asserts nothing about textual similarity or window length, so any 3+ residents with e.g. category='maintenance' in a day become a 'shared incident'. Missing brief on reopen: the Resolution Memory branch of create_issue() and resident_confirm(confirmed=false) both write lane='REVIEW' directly via db.issues.update_one without calling generate_review_summary/run_triage, so review_summary stays null and IssueDetailSheet's review-outcome block (conditioned on review_summary) never renders."
+}

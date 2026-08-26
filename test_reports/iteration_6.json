@@ -1,0 +1,61 @@
+{
+  "summary": "Targeted re-verification of the 6 fixes from iteration_5, backend + frontend, with real claude-sonnet-4-6 calls. Created /app/backend/tests/test_fixes_iter6.py (18 pytest cases, ALL 18 PASS in 78s with -n 0) + /app/backend/tests/probe_incident_precision.py + /app/backend/tests/cleanup_iter6.py. VERIFIED FIXED: (1) Resolution-Memory reopen (QA6_Sink/9301: create -> ACTION/maintenance -> staff PATCH resolved -> confirmation_pending -> confirm{true} -> resolved+confirmed -> resubmit 'The kitchen sink you fixed yesterday is leaking again') returns the SAME issue id (matched_existing=true, no duplicate, /residents/requests still 1 request), status=reopened, lane=REVIEW, failed_resolution=true, review_summary now present with ALL 6 non-empty fields, issue.contact_count=3 == repeat_complaint.contact_count=3 (off-by-one gone), category still 'maintenance' (sticky), human_attention_score=92 (>=88). (2) confirm{false} path (QA6_Heat/9401) -> reopened, lane REVIEW, resident_confirmed=false, resolution_attempts=1, failed_resolution=true, review_summary with all 6 fields, contact_count 1 == repeat_complaint.contact_count 1. (3) intervention_worked is now derived (True on the confirmed-then-returned path, False on the confirm=false path) not hardcoded. (4) resident_reply with an off-topic follow-up ('what time does the rooftop pool close on weekends?') on a dishwasher ticket did NOT change category (still 'maintenance') and did not downgrade priority (P1 -> P1), contact_count incremented to 2. (5) Policy conflict (2 contradictory Parking Policy docs + 'Can my guest park overnight?') -> lane REVIEW, policy_conflict=true, not auto-resolved, attention_reasons include 'Policy conflict between documents', human_attention_score=55 (floor honoured; base was P3=6+30=36). (6) /api/incidents/detect returns {incidents:[]} on the 5 seeded issues (no more 490-minute category-only false positive); 3 residents reporting the SAME keyword ('elevator') within 0 min DO form one incident (resident_count 3, window<=180); 3 residents with the same broad category but DIFFERENT subjects (leaking sink / flickering light / no hot water) do NOT cluster. FRONTEND (Playwright, injected session cookie, /staff): reopened QA6_Sink sheet now renders review-outcome 'STAFF REVIEW BRIEF' with all 6 labelled fields, failed-resolution-banner 'Resident contacts: 3' and repeat-complaint-banner 'Contact count: 3' are now CONSISTENT, attention-score 92 with reasons; QA6_Heat (confirm=false) also renders review-outcome + failed-resolution-banner; QA6_Guest renders policy-conflict-banner with attention 55; shared-incident-banner rendered only for the real elevator cluster ('3 related reports from 3 residents (units 9101,9102,9103) within a 0-minute window'); 0 error nodes, no console errors. NEW DEFECT FOUND (see backend_issues.critical): an auto-answerable off-topic follow-up on an OPEN ACTION ticket flips the whole ticket to lane=RESOLVE/status=resolved. CLEANUP DONE: all QA6_ residents/issues/interactions and both temp docs+chunks deleted; DB back to exactly 5 issues (lanes+scores intact, no backfill needed), 50 residents, 4 documents, 8 chunks, 0 incidents, 12 interactions; /api/incidents/detect -> {incidents:[]}.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "POST /api/issues/{id}/reply",
+        "issue": "The category-sticky fix only pinned `category`; run_triage on the follow-up still overwrites lane/status/assigned_team. Reproduced: open ACTION ticket 'My dishwasher will not drain and there is standing water inside' (Maintenance, P1) + follow-up 'By the way, what time does the rooftop pool close on weekends?' -> issue became lane=RESOLVE, status=resolved, resolved_at set, assigned_team cleared, auto_response='The pool closes at 10:00 PM daily...'. The unresolved maintenance work order is silently closed (and no confirmation is requested), and it inflates the 'handled automatically' dashboard metric. On a reply, an auto-answer should be posted as an AI message only; lane/status must not move backwards from ACTION/REVIEW to RESOLVE without the original problem being addressed.",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": [
+      {
+        "endpoint": "GET /api/incidents/detect",
+        "issue": "Keyword clustering is much better but still false-positives on generic vocabulary. Reproduced with 3 residents in the same 0-min window: 'My apartment door lock is broken, please help' (maintenance), 'The apartment gym treadmill is broken, please fix it' (amenity), 'Please hold my package at the front desk, apartment 9703' (package) -> one incident {keyword:'apartment', category:'maintenance', count:3, resident_count:3, units:[9701,9702,9703]} even though the three issues are in three different categories. Suggest: require the shared keyword to come from `entities` (or a domain noun list), exclude generic terms (apartment/building/please/unit/broken/working), and require a single shared category before declaring an incident. Script: /app/backend/tests/probe_incident_precision.py"
+      },
+      {
+        "endpoint": "internal build_repeat_complaint()",
+        "issue": "intervention_worked is now derived, but the derivation makes it structurally always True on the returned_resolved reopen path (resolved_at AND resident_confirmed are both set from the prior confirmed cycle) and always False on the confirm=false path — so it never actually reports whether the fix held. The UI then shows 'PREVIOUS RESOLUTION FAILED' directly above 'Prior intervention worked: Yes' in the same sheet, which reads as a contradiction. Consider relabelling it (e.g. 'Prior fix accepted then failed') or deriving from whether the problem recurred."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Staff issue detail Sheet (reopened issue)",
+        "issues": ["'PREVIOUS RESOLUTION FAILED' banner sits immediately above 'Prior intervention worked: Yes' in the Repeat Complaint card — contradictory wording (data itself is now consistent: contacts 3 = contact count 3)."]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_fixes_iter6.py",
+    "/app/backend/tests/probe_incident_precision.py",
+    "/app/backend/tests/cleanup_iter6.py",
+    "/app/test_reports/pytest/fixes_iter6.xml"
+  ],
+  "action_items": [
+    "HIGH: stop resident_reply from flipping an open ACTION/REVIEW issue to lane=RESOLVE/status=resolved when the follow-up happens to be an auto-answerable off-topic question — post the AI answer as a message only and keep the original lane/status/assigned_team.",
+    "MEDIUM: tighten detect_incidents keyword selection (entities/domain nouns, generic-word stoplist, same-category requirement) — 'apartment' currently clusters 3 unrelated issues across 3 categories.",
+    "LOW: rename/re-derive repeat_complaint.intervention_worked so it does not read as contradicting the 'Previous resolution failed' banner."
+  ],
+  "critical_code_review_comments": [
+    "resident_reply() re-runs the full run_triage() and then patches only priority/category/is_emergency back — the same class of bug will recur for any other field triage owns (lane, status, assigned_team, resolved_at, auto_response). Better: for follow-ups run an 'analysis-only' triage that never changes lane/status.",
+    "detect_incidents() builds a keyword->issues inverted index over every word >3 chars of description+entities on every request; with volume this is O(words*issues) per call and grows unbounded — precompute keywords at triage time and index them.",
+    "server.py is now 1392 lines (triage, auth, documents, dashboard, incidents) — split into routers/services.",
+    "GET /api/dashboard still runs one interactions query per issue (N+1) for median first-response; replace with a single aggregation."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_fixes_iter6.py",
+    "/app/backend/tests/probe_incident_precision.py",
+    "/app/backend/tests/cleanup_iter6.py"
+  ],
+  "success_rate": {"backend": "100% (18/18 pytest cases on the 6 fixes + CHECKPOINT 6 regression); 1 new unrelated HIGH defect found by exploratory probe", "frontend": "100% of asserted elements rendered (review brief on both reopen paths, consistent counts, policy-conflict banner, precise incident banner)"},
+  "seed_data_creation": "Temporarily created 13 QA6_ residents/issues (QA6_Elev1-3, QA6_Diff1-3, QA6_Sink, QA6_Heat, QA6_Reply, QA6_Guest, QA6_Gen1-3) and 2 temp Parking Policy docs (QA6_ParkingA/B). ALL removed via /app/backend/tests/cleanup_iter6.py — verified final state 5 issues / 50 residents / 4 documents / 8 chunks / 0 incidents / 12 interactions, seeded lanes+scores intact (38,66,66,38,26), backfill_lanes.py NOT needed.",
+  "should_call_test_agent_after_fix": true,
+  "should_main_agent_self_test": false,
+  "test_credentials": "Bearer test_session_step2_demo / cookie session_token=test_session_step2_demo (user test-user-step2 / aishwaryajakka@hotmail.com), db test_database",
+  "context_for_next_testing_agent": "Run `pytest /app/backend/tests/test_fixes_iter6.py -v -n 0` (~80s, real AI) for the 6 fixes, then ALWAYS run `python /app/backend/tests/cleanup_iter6.py` which deletes every ^QA/^TEST resident+issues+interactions and QA docs/chunks and asserts the 5/50/4 baseline (exit 0 = STATE_OK). All 6 iteration_5 fixes are confirmed working. Open items: (a) HIGH — resident_reply auto-resolving an open ACTION ticket via an off-topic auto-answerable follow-up (repro in report; use probe: create dishwasher issue then reply with a pool-hours question and check lane/status); (b) incident detector still clusters on generic keywords ('apartment') — repro script /app/backend/tests/probe_incident_precision.py. Frontend: add cookie session_token then goto /staff, rows are [data-testid=issue-row-{id}], sheet blocks review-outcome / failed-resolution-banner / repeat-complaint-banner / policy-conflict-banner / attention-score.",
+  "rca_of_the_issue": "New HIGH defect: resident_reply() calls run_triage(issue_id, ...) on the follow-up message, and run_triage's RESOLVE branch (server.py ~line 412) writes lane=RESOLVE, status=resolved, resolved_at and clears assigned_team whenever the message is answerable with high confidence from property documents. resident_reply afterwards only re-pins priority/category/is_emergency, so the resolve state survives and the original open work order is closed. Incident false positive: detect_incidents indexes every token >3 chars from description+entities with only the generic _STOPWORDS filter, so a common noun such as 'apartment' shared by 3 residents satisfies the >=3-distinct-resident + <=180-min test regardless of category or topic."
+}

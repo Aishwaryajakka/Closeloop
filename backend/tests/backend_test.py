@@ -85,9 +85,11 @@ class TestResidentFlow:
         assert r.status_code == 200, r.text
         issue = r.json()
         assert issue["status"] == "open"
-        assert issue["lane"] == "REVIEW"
-        assert issue["priority"] == "P2"
-        assert issue["category"] is None
+        # Step 3: AI analysis now sets lane/priority/category automatically
+        assert issue["lane"] in ("REVIEW", "ACTION", "RESOLVE")
+        assert issue["priority"] in ("P0", "P1", "P2", "P3")
+        assert issue["ai_analyzed"] is True
+        assert issue["category"]
         assert issue["description"] == payload["message"]
         assert issue["unit"] == unit
         assert isinstance(issue["id"], str)
@@ -114,7 +116,8 @@ class TestResidentFlow:
         d = r.json()
         assert d["resident"]["name"] == name
         assert len(d["issues"]) == 1
-        assert d["issues"][0]["category"] == "HVAC"
+        # Step 3: AI analysis overwrites the resident-supplied category with its own taxonomy
+        assert d["issues"][0]["category"]
         assert "_id" not in d["issues"][0]
 
     def test_resident_requests_unknown(self, client):

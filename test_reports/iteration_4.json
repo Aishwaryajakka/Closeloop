@@ -1,0 +1,64 @@
+{
+  "summary": "Step 4 (RESOLVE/ACTION/REVIEW decision lanes) tested end-to-end. Created /app/backend/tests/test_lanes.py (17 pytest cases, all PASS, real Claude Sonnet 4.6 calls): CHECKPOINT 4 a/b/c/d all behaved differently and correctly (RESOLVE auto-answer 'The pool closes at 10:00 PM daily.' sourced to Amenity Rules, confidence high, status resolved + 'ai' timeline bubble; ACTION dishwasher -> Maintenance + acknowledgement + 'system' timeline bubble, status open; REVIEW repeated-noise -> all 6 brief fields populated, human_judgment_required true; 'Water is pouring through my ceiling' -> P0 + is_emergency true + lane REVIEW + brief citing Emergency Procedures). Grounding fallback verified: 'What is the wifi password for the lobby?' -> lane REVIEW, no auto_response (no fabrication). Routing verified: move-out inspection -> Leasing, package at front desk -> Concierge, appliance -> Maintenance. GET /api/issues + /api/issues/{id} return all new lane fields with no _id leakage; 5 seeded issues all have valid lane outcomes and the seeded P0 is REVIEW+is_emergency. Frontend verified via Playwright with injected session cookie: emergency row highlight + emergency-flag icon, resolve-outcome (source + confidence), action-outcome (team + ack), review-outcome (all 6 labeled fields + policy chips), emergency-banner, ai-understanding, interaction timeline with Auto-Response/system bubbles, sheet status PATCH round-trip, resident portal resident-answer/resident-ack, Property Knowledge 4 docs Ready. One real defect found: resident follow-up replies still use the legacy apply_analysis/derive_lane path instead of run_triage, so lanes set by a reply have no lane outcomes and P0 escalations are not flagged as emergencies. All CP4_ test data deleted; DB back to exactly 5 issues + 50 residents with lanes intact.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "POST /api/issues/{id}/reply",
+        "issue": "Reply path calls the legacy apply_analysis()/derive_lane() instead of run_triage(), so Step 4 rules do not run on follow-up messages. Reproduced: created an ACTION issue, then replied 'This is now an emergency - water is flooding my kitchen and the electrical outlet is sparking!' -> priority became P0 and lane REVIEW, but is_emergency stayed FALSE (no red banner / no dashboard escalation) and review_summary stayed NULL (empty Staff Review Brief, card does not render). A second reply asking 'what time does the pool close?' left lane=REVIEW with no review_summary and dropped priority P0->P3, losing the emergency. derive_lane can also set lane=RESOLVE with no doc grounding and no auto_response. Violates 'runs automatically on each new message' and 'every P0 must be REVIEW and visually escalated'.",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": [
+      {
+        "endpoint": "POST /api/issues/{id}/reply",
+        "issue": "Priority can be downgraded by a low-severity follow-up message (P0 -> P3), silently de-escalating an emergency. Priority/emergency should be monotonic (never lowered by AI without staff action)."
+      },
+      {
+        "endpoint": "internal run_triage / retrieve_chunks",
+        "issue": "review_policy_source is populated from raw lexical hits even when the model concludes 'No specific policy found.' The noise-complaint REVIEW brief listed 'Pet Policy' and 'Parking Policy' chips as relevant policy sources - misleading to staff. Suggest suppressing chips when relevant_policy indicates no applicable policy."
+      },
+      {
+        "endpoint": "internal (dead code)",
+        "issue": "apply_analysis() and derive_lane() are now duplicated/stale versions of run_triage()/decide_lane(); remove after the reply path is migrated to avoid further divergence."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Resident follow-up reply -> staff detail sheet",
+        "issue": "Because the reply path does not run full triage, an issue whose lane flips to REVIEW via a reply renders no review-outcome card and a P0 renders no emergency-banner / no red dashboard row (frontend is correct; data is missing).",
+        "affected_selectors": ["review-outcome", "emergency-banner", "emergency-flag-{id}"]
+      }
+    ],
+    "design_issues": [
+      {
+        "screen": "Staff issue detail Sheet",
+        "issues": ["Staff Review Brief shows policy-source chips (Pet Policy, Parking Policy) that are unrelated to the complaint while the body says 'No specific policy found.' - contradictory information."]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_lanes.py",
+    "/app/test_reports/pytest/lanes_results.xml"
+  ],
+  "action_items": [
+    "Replace apply_analysis() with run_triage() in POST /api/issues/{id}/reply so lane outcomes (auto_response / acknowledgement / review_summary / is_emergency) are produced on every new message, and delete the stale apply_analysis/derive_lane helpers.",
+    "Never lower priority / clear is_emergency from an AI re-analysis of a follow-up message (take max severity).",
+    "Suppress review_policy_source chips when the generated brief reports no applicable policy."
+  ],
+  "critical_code_review_comments": [
+    "server.py has two divergent triage implementations (apply_analysis/derive_lane vs run_triage/decide_lane) - a DRY violation that is the direct cause of the reply-path bug.",
+    "retrieve_chunks() loads up to 3000 chunks into memory and scores them in Python on every RESOLVE/REVIEW triage; will not scale - move to a Mongo text index or embeddings.",
+    "server.py is ~1000 lines; consider splitting triage/documents/auth into modules."
+  ],
+  "updated_files": ["/app/backend/tests/test_lanes.py"],
+  "success_rate": {"backend": "100% (17/17 lane+regression pytest cases; 1 additional defect found by manual reply-path probing outside the suite)", "frontend": "100% of Step 4 UI assertions passed"},
+  "seed_data_creation": "Created 9 temporary issues + residents prefixed CP4_ ; ALL deleted afterwards (interactions, issues, residents). DB verified back to exactly 5 seeded issues (lanes intact, no backfill needed) and 50 residents.",
+  "should_call_test_agent_after_fix": true,
+  "should_main_agent_self_test": false,
+  "test_credentials": "Session injection: Authorization: Bearer test_session_step2_demo / cookie session_token (user test-user-step2, aishwaryajakka@hotmail.com)",
+  "context_for_next_testing_agent": "Run `pytest /app/backend/tests/test_lanes.py -v -n 0` (33s, real AI calls). It auto-tracks created issues in CREATED but does NOT delete them - clean up CP4_* residents/issues/interactions in Mongo afterwards (script pattern in iteration_4 summary). Frontend: inject cookie session_token=test_session_step2_demo on domain triage-skeleton.preview.emergentagent.com, then /staff. Note REVIEW brief labels render CSS-uppercased, so use case-insensitive text assertions. The only open defect is the reply-path triage regression (POST /api/issues/{id}/reply); re-test it by creating an ACTION issue and replying with an emergency message, then asserting is_emergency/review_summary.",
+  "rca_of_the_issue": "create_issue() was migrated to run_triage() for Step 4 but resident_reply() was left calling the old apply_analysis(), which only writes intent/priority/lane and never sets is_emergency, auto_response, acknowledgement or review_summary. Any lane change triggered by a resident follow-up therefore yields an inconsistent record (e.g. lane REVIEW without a brief, P0 without emergency escalation)."
+}

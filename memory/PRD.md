@@ -27,6 +27,17 @@ Phase 1 (skeleton, NO AI): MVP web app for multifamily property management. Resi
 - Seeded 4 demo PDF policy docs (parking, pets, amenities, maintenance/emergencies), all indexed/ready.
 - Tested: 48/48 backend + all frontend flows pass. No AI auto-answering yet (per scope).
 
+## Implemented — Steps 4-12 (2026-06): AI resolution engine + Attention Dashboard
+- Step 4 lanes: RESOLVE (doc-grounded auto-answer), ACTION (auto-route Maintenance/Leasing/Concierge + acknowledgement), REVIEW (staff brief); P0 emergency escalation.
+- Step 5 Citations/Confidence: answer + source doc + passage + confidence; only HIGH auto-sends; else REVIEW; contradictory docs → POLICY CONFLICT.
+- Step 6 Resolution Memory: AI-match new messages to existing issues (no duplicates); returning-after-resolved reopens the SAME issue. CHECKPOINT 6 verified.
+- Step 7 Confirmation: ACTION complete → confirmation_pending + resident Yes/No; silence stays pending. CHECKPOINT 7 verified.
+- Step 8 Historical precedent: similar resolved cases + staff-only suggested_response (docs authoritative).
+- Step 9 Attention Dashboard: "What needs your attention?" + 8 cards + Needs Attention ranking + 6 tabs + reopened highlighting.
+- Step 10 Human Attention Score 0-100 with visible reasons.
+- Step 11 Repeat complaint banner. Step 12 Shared incident detection + merge.
+- Tested: 34/34 backend pytest incl. Checkpoints 5/6/7; full frontend UI verified; post-fix re-verified.
+
 ## Implemented (2026-06)
 - Resident portal: submit request (optional category), track requests by name+unit with status badges.
 - Public issue creation auto-creates resident + issue + resident interaction; server-side required-field validation.
