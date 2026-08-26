@@ -29,7 +29,7 @@ async def run():
     await db.issues.delete_many({})
     await db.interactions.delete_many({})
 
-    prop = {"id": str(uuid.uuid4()), "name": "Rivergate Commons", "address": "1200 Rivergate Blvd, Austin, TX 78701"}
+    prop = {"id": str(uuid.uuid4()), "name": "Riverside Luxury Residences", "address": "1200 Rivergate Blvd, Austin, TX 78701"}
     await db.properties.insert_one(dict(prop))
 
     # 50 residents across units on 5 floors

@@ -1,12 +1,13 @@
 import React from "react";
-import { Building2, LogOut, Inbox, BookOpen, TrendingUp } from "lucide-react";
+import { LogOut, Inbox, BookOpen, TrendingUp } from "lucide-react";
+import { BrandMark } from "@/components/BrandMark";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 
 const NAV = [
-  { to: "/staff", label: "All Issues", icon: Inbox, testid: "nav-issues" },
-  { to: "/staff/knowledge", label: "Property Knowledge", icon: BookOpen, testid: "nav-knowledge" },
-  { to: "/staff/insights", label: "Trend Insights", icon: TrendingUp, testid: "nav-insights" },
+  { to: "/staff", label: "Overview", icon: Inbox, testid: "nav-issues" },
+  { to: "/staff/knowledge", label: "Knowledge Base", icon: BookOpen, testid: "nav-knowledge" },
+  { to: "/staff/insights", label: "Analytics", icon: TrendingUp, testid: "nav-insights" },
 ];
 
 export default function StaffLayout({ title, headerAction, children }) {
@@ -24,11 +25,11 @@ export default function StaffLayout({ title, headerAction, children }) {
       <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 p-5">
         <div className="flex items-center gap-2 mb-1">
           <div className="h-9 w-9 rounded-lg bg-slate-900 flex items-center justify-center">
-            <Building2 className="h-5 w-5 text-white" />
+            <BrandMark className="h-5 w-5 text-white" />
           </div>
           <span className="font-heading font-extrabold tracking-tight text-slate-900">CloseLoop</span>
         </div>
-        <p className="text-[11px] leading-tight text-slate-400 mb-7 pl-0.5">Close problems, not tickets.</p>
+        <p className="text-[11px] leading-tight text-slate-400 mb-7 pl-0.5">Riverside Luxury Residences</p>
 
         <nav className="space-y-1">
           {NAV.map((item) => {

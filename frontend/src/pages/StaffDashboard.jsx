@@ -93,8 +93,9 @@ export default function StaffDashboard() {
   );
 
   return (
-    <StaffLayout title="What needs your attention?" headerAction={headerAction}>
+    <StaffLayout title="Good morning" headerAction={headerAction}>
       <div className="p-6 md:p-8 space-y-6">
+        <p className="text-slate-500 -mt-2">CloseLoop handled the routine. Here's what needs you.</p>
         {/* Shared incident */}
         {incidents.length > 0 && incidents.map((inc, idx) => (
           <div key={idx} data-testid="shared-incident-banner" className="rounded-xl border-2 border-purple-300 bg-purple-50 p-4 flex items-start gap-3">

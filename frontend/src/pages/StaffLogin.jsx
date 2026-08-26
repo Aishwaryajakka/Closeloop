@@ -1,5 +1,6 @@
 import React from "react";
-import { Building2, ShieldCheck } from "lucide-react";
+import { BrandMark } from "@/components/BrandMark";
+import { ShieldCheck } from "lucide-react";
 
 export default function StaffLogin() {
   const handleLogin = () => {
@@ -14,7 +15,7 @@ export default function StaffLogin() {
       <div className="flex flex-col justify-between p-8 lg:p-14 bg-white">
         <div className="flex items-center gap-2">
           <div className="h-9 w-9 rounded-lg bg-slate-900 flex items-center justify-center">
-            <Building2 className="h-5 w-5 text-white" />
+            <BrandMark className="h-5 w-5 text-white" />
           </div>
           <span className="font-heading font-extrabold text-lg tracking-tight text-slate-900">CloseLoop</span>
         </div>

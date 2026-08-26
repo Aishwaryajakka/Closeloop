@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Building2, Send, Search, LayoutDashboard, MessageSquarePlus, Clock } from "lucide-react";
+import { Send, Search, LayoutDashboard, MessageSquarePlus, Clock, Check, RotateCcw } from "lucide-react";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { STATUS_META, fmtDate } from "@/lib/constants";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { BrandMark } from "@/components/BrandMark";
 
 function StatusBadge({ status }) {
   const meta = STATUS_META[status] || STATUS_META.open;
@@ -26,6 +24,7 @@ export default function ResidentPortal() {
   const [tab, setTab] = useState("new"); // new | track
   const [requests, setRequests] = useState([]);
   const [tracked, setTracked] = useState(false);
+  const [result, setResult] = useState(null);
   const [openThread, setOpenThread] = useState(null);
   const [thread, setThread] = useState([]);
 
@@ -40,15 +39,14 @@ export default function ResidentPortal() {
     }
     setSubmitting(true);
     try {
-      await api.post("/issues", {
+      const res = await api.post("/issues", {
         name: name.trim(),
         unit: unit.trim(),
         message: message.trim(),
-        category: category || null,
       });
-      toast.success("Request submitted! Our team will follow up shortly.");
+      setResult(res.data);
+      toast.success("We've got it — CloseLoop is on it.");
       setMessage("");
-      setCategory("");
       await loadRequests(name.trim(), unit.trim());
     } catch (e) {
       toast.error("Something went wrong. Please try again.");
@@ -104,35 +102,80 @@ export default function ResidentPortal() {
         <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="h-9 w-9 rounded-lg bg-slate-900 flex items-center justify-center">
-              <Building2 className="h-5 w-5 text-white" />
+              <BrandMark className="h-5 w-5 text-white" />
             </div>
             <div className="leading-tight">
               <p className="font-heading font-extrabold tracking-tight text-slate-900">CloseLoop</p>
               <p className="text-xs text-slate-500">{config?.property?.name || "Resident Portal"}</p>
             </div>
           </div>
-          <a
-            href="/staff/login"
-            data-testid="staff-portal-link"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors duration-200"
-          >
-            <LayoutDashboard className="h-4 w-4" /> Staff Login
-          </a>
+          <div className="flex items-center gap-4">
+            <button
+              data-testid="tab-track-request-top"
+              onClick={() => setTab("track")}
+              className="text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors duration-200"
+            >
+              My Requests
+            </button>
+            <a
+              href="/staff/login"
+              data-testid="staff-portal-link"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-slate-700 transition-colors duration-200"
+            >
+              <LayoutDashboard className="h-3.5 w-3.5" /> Staff Login
+            </a>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-6 py-10">
-        <div className="text-center mb-8">
-          <h1 className="font-heading text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
-            How can we help?
-          </h1>
-          <p className="mt-3 text-base text-slate-600">
-            Tell us what's going on in your unit. No account needed &mdash; every issue is followed through to resolution.
-          </p>
-        </div>
+      <main className="max-w-5xl mx-auto px-6 py-10 md:py-14">
+        <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-start">
+          {/* LEFT */}
+          <div className="lg:pt-6">
+            <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">{(config?.property?.name || "Riverside Luxury Residences").toUpperCase()}</p>
+            <h1 className="font-heading text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
+              How can we help?
+            </h1>
+            <p className="mt-4 text-base leading-relaxed text-slate-600 max-w-md">
+              Tell us what's happening and CloseLoop will get it to the right team, keep you updated, and follow it through to resolution.
+            </p>
+            <ul className="mt-6 space-y-2.5">
+              {["No account needed", "Automatically routed", "Followed through to resolution"].map((t) => (
+                <li key={t} className="flex items-center gap-2.5 text-sm text-slate-700">
+                  <Check className="h-4 w-4 text-emerald-600" /> {t}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-8 text-sm font-medium text-slate-400">Report once. Stay informed. Get resolved.</p>
+          </div>
 
+          {/* RIGHT */}
+          <div>
+        {result && (
+          <div data-testid="submission-result" className="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_2px_8px_-2px_rgba(15,23,42,0.08)] animate-fade-up">
+            <p className="text-sm font-bold text-emerald-700">We've got it.</p>
+            <h3 className="mt-1 font-heading text-xl font-bold text-slate-900 capitalize">{result.category || "Your request"}</h3>
+            <p className="text-sm text-slate-500 mt-0.5">
+              {[result.assigned_team, result.priority && `${result.priority} ${result.priority === "P0" ? "Emergency" : result.priority === "P1" ? "Urgent" : result.priority === "P2" ? "Normal" : "Admin"}`].filter(Boolean).join(" · ")}
+            </p>
+            <ul className="mt-4 space-y-1.5 text-sm text-slate-700">
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600" /> Request understood</li>
+              {result.matched_existing && (
+                <>
+                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600" /> Previous issue found</li>
+                  <li className="flex items-center gap-2 text-orange-700"><RotateCcw className="h-4 w-4" /> Existing issue reopened</li>
+                </>
+              )}
+              {result.lane === "ACTION" && <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600" /> Property team notified</li>}
+              {result.lane === "RESOLVE" && <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600" /> Answered from property documents</li>}
+              {result.lane === "REVIEW" && !result.matched_existing && <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600" /> Sent to the property team for review</li>}
+            </ul>
+            <p className="mt-4 text-sm text-slate-500">You don't need to submit another request. We'll keep this issue together and update you here.</p>
+            <button data-testid="submit-another-btn" onClick={() => setResult(null)} className="mt-3 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors duration-200">Report something else</button>
+          </div>
+        )}
         {/* Tabs */}
-        <div className="flex gap-2 p-1 bg-slate-100 rounded-full w-fit mx-auto mb-6">
+        <div className="flex gap-2 p-1 bg-slate-100 rounded-full w-fit mb-6">
           <button
             data-testid="tab-new-request"
             onClick={() => setTab("new")}
@@ -177,23 +220,7 @@ export default function ResidentPortal() {
           {tab === "new" ? (
             <>
               <div className="mt-4">
-                <label className="text-xs font-bold uppercase tracking-widest text-slate-400">
-                  Category <span className="text-slate-300 normal-case font-medium tracking-normal">(optional)</span>
-                </label>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger data-testid="resident-category-select" className="mt-1.5 rounded-lg">
-                    <SelectValue placeholder="Choose a category (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(config?.categories || []).map((c) => (
-                      <SelectItem key={c} value={c}>{c}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="mt-4">
-                <label className="text-xs font-bold uppercase tracking-widest text-slate-400">Message</label>
+                <label className="text-xs font-bold uppercase tracking-widest text-slate-400">How can we help?</label>
                 <textarea
                   data-testid="resident-message-input"
                   value={message}
@@ -202,9 +229,10 @@ export default function ResidentPortal() {
                     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) submit();
                   }}
                   rows={4}
-                  placeholder="Describe the issue in your own words…"
+                  placeholder="Tell us what's happening in your own words…"
                   className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-3 text-sm text-slate-900 placeholder:text-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-1"
                 />
+                <p className="mt-1.5 text-xs text-slate-400">e.g. "The sink maintenance fixed yesterday has started leaking again."</p>
               </div>
 
               <button
@@ -213,8 +241,7 @@ export default function ResidentPortal() {
                 disabled={submitting}
                 className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white font-semibold py-3 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2"
               >
-                <Send className="h-4 w-4" />
-                {submitting ? "Submitting…" : "Submit Request"}
+                {submitting ? "Working…" : "Get Help"} <Send className="h-4 w-4" />
               </button>
             </>
           ) : (
@@ -304,6 +331,8 @@ export default function ResidentPortal() {
             )}
           </div>
         )}
+          </div>
+        </div>
       </main>
     </div>
   );
