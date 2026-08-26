@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { Search, Inbox, RefreshCw, ShieldAlert, Layers } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Search, Inbox, RefreshCw, ShieldAlert, Layers, Info, ArrowRight } from "lucide-react";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { STATUS_META, LANE_META, PRIORITY_META, fmtDate, attentionCls, fmtDuration } from "@/lib/constants";
@@ -8,6 +9,70 @@ import StaffLayout from "@/components/StaffLayout";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+
+function ImpactMetric({ value, label, accent, tip, testid }) {
+  const number = (
+    <p className={`font-heading text-xl font-extrabold tracking-tight leading-none ${accent || "text-slate-900"}`}>{value}</p>
+  );
+  return (
+    <div data-testid={testid} className="min-w-0 sm:flex-1 sm:px-4 sm:first:pl-0">
+      <div className="flex items-center gap-1">
+        {number}
+        {tip && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button type="button" className="text-slate-300 hover:text-slate-500 transition-colors" aria-label="More info">
+                <Info className="h-3 w-3" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-[220px] bg-slate-900 text-slate-100">{tip}</TooltipContent>
+          </Tooltip>
+        )}
+      </div>
+      <p className="mt-1 text-[11px] font-semibold leading-tight text-slate-500">{label}</p>
+    </div>
+  );
+}
+
+function ImpactStrip({ impact }) {
+  const navigate = useNavigate();
+  if (!impact) return null;
+  const timeSavedTip = `Assumes ${impact.assumed_minutes_per_interaction} min of staff time per interaction handled without human review.`;
+  return (
+    <TooltipProvider delayDuration={150}>
+      <div data-testid="impact-strip" className="rounded-xl border border-slate-200 bg-slate-50/60 px-5 py-3.5 shadow-[0_1px_3px_-1px_rgba(15,23,42,0.05)]">
+        <div className="flex items-center gap-2 mb-2.5">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Business Impact</p>
+          <span data-testid="impact-demo-badge" className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-amber-700 bg-amber-100 border border-amber-200 rounded-full px-1.5 py-0.5">
+            Demo Environment
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button type="button" className="text-amber-500 hover:text-amber-700 transition-colors" aria-label="About demo metrics">
+                  <Info className="h-2.5 w-2.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-[240px] bg-slate-900 text-slate-100 normal-case tracking-normal font-medium">
+                Metrics shown here are generated from the CloseLoop demo dataset. Production metrics calculate automatically from actual property activity.
+              </TooltipContent>
+            </Tooltip>
+          </span>
+          <button data-testid="view-impact-link" onClick={() => navigate("/staff/insights")}
+            className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors">
+            View Impact <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+        <div className="grid grid-cols-2 gap-y-3 sm:flex sm:items-stretch sm:divide-x sm:divide-slate-200">
+          <ImpactMetric testid="impact-automation" value={`${impact.automation_rate}%`} label="Handled without management" accent="text-emerald-600" />
+          <ImpactMetric testid="impact-time-saved" value={`${impact.hours_saved}h`} label="Estimated time saved" tip={timeSavedTip} />
+          <ImpactMetric testid="impact-confirmed" value={`${impact.resident_confirmed_rate}%`} label="Resident-confirmed resolution" accent="text-emerald-600" />
+          <ImpactMetric testid="impact-repeat" value={impact.repeat_complaints} label="Repeat issues detected" accent="text-amber-600" />
+          <ImpactMetric testid="impact-failed" value={impact.failed_resolutions} label="Failed resolutions surfaced" accent="text-orange-600" />
+        </div>
+      </div>
+    </TooltipProvider>
+  );
+}
 
 function Pill({ meta, testid }) {
   if (!meta) return <span className="text-slate-400 text-sm">—</span>;
@@ -41,6 +106,7 @@ function rank(i) {
 export default function StaffDashboard() {
   const [issues, setIssues] = useState([]);
   const [stats, setStats] = useState(null);
+  const [impact, setImpact] = useState(null);
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -51,12 +117,13 @@ export default function StaffDashboard() {
   const load = async () => {
     setLoading(true);
     try {
-      const [iss, st, inc] = await Promise.all([
-        api.get("/issues"), api.get("/dashboard"), api.get("/incidents/detect"),
+      const [iss, st, inc, imp] = await Promise.all([
+        api.get("/issues"), api.get("/dashboard"), api.get("/incidents/detect"), api.get("/impact"),
       ]);
       setIssues(iss.data);
       setStats(st.data);
       setIncidents(inc.data.incidents || []);
+      setImpact(imp.data);
     } catch (e) {
       toast.error("Failed to load dashboard.");
     } finally {
@@ -112,6 +179,9 @@ export default function StaffDashboard() {
             </div>
           </div>
         ))}
+
+        {/* Business Impact strip (Overview only) */}
+        {tab === "Overview" && <ImpactStrip impact={impact} />}
 
         {/* Summary cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

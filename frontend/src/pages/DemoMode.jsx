@@ -37,8 +37,17 @@ function TL({ children, done, active }) {
 
 export default function DemoMode() {
   const navigate = useNavigate();
-  const [act, setAct] = useState(0);
+  const params = new URLSearchParams(window.location.search);
+  const startAct = Math.min(Math.max(parseInt(params.get("act") || "0", 10) || 0, 0), 5);
+  const [act, setAct] = useState(startAct);
+  const [auto, setAuto] = useState(false);
   const next = () => setAct((a) => Math.min(a + 1, 5));
+
+  React.useEffect(() => {
+    if (!auto || act === 0 || act >= 5) return;
+    const t = setTimeout(() => setAct((a) => Math.min(a + 1, 5)), 4500);
+    return () => clearTimeout(t);
+  }, [auto, act]);
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-50 overflow-auto">
@@ -50,6 +59,8 @@ export default function DemoMode() {
           <span data-testid="demo-badge" className="ml-2 text-[10px] font-bold uppercase tracking-widest text-amber-700 bg-amber-100 border border-amber-200 rounded-full px-2 py-0.5">Demo Environment</span>
         </div>
         <div className="flex items-center gap-2">
+          <button data-testid="demo-jump-act3" onClick={() => setAct(3)} className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-orange-200 text-orange-700 px-3 py-1.5 text-xs font-semibold hover:bg-orange-50 transition-colors duration-200">Jump to reopen moment</button>
+          <button data-testid="demo-autoplay" onClick={() => setAuto((v) => !v)} className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors duration-200 ${auto ? "bg-emerald-600 text-white" : "border border-slate-200 text-slate-600 hover:bg-slate-100"}`}>{auto ? "Auto-play: On" : "Auto-play"}</button>
           <button data-testid="demo-restart" onClick={() => setAct(0)} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors duration-200"><RefreshCw className="h-3.5 w-3.5" /> Restart Demo</button>
           <button data-testid="demo-exit" onClick={() => navigate("/staff")} className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 text-xs font-semibold transition-colors duration-200"><X className="h-3.5 w-3.5" /> Exit Demo</button>
         </div>
@@ -123,7 +134,7 @@ export default function DemoMode() {
               <p className="text-sm font-bold text-orange-800 flex items-center gap-2"><ShieldAlert className="h-4 w-4" /> PREVIOUS RESOLUTION FAILED</p>
               <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm text-orange-900">
                 <div>Same issue reopened</div><div>Repeat problem detected</div>
-                <div>Resolution attempts: <span className="font-semibold">2</span></div><div>Human Attention: <span className="font-semibold">91/100</span></div>
+                <div>Resolution attempts: <span className="font-semibold">1</span></div><div>Human Attention: <span className="font-semibold">96/100</span></div>
               </div>
               <p className="mt-2 text-sm font-semibold text-orange-800">Management review recommended.</p>
             </div>
@@ -154,6 +165,7 @@ export default function DemoMode() {
               <Metric label="Resolution Failures" value="3" accent="text-orange-600" />
             </div>
             <button data-testid="demo-enter-live" onClick={() => navigate("/staff")} className="mt-8 inline-flex items-center gap-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-semibold px-6 py-3">Enter the live dashboard <ArrowRight className="h-4 w-4" /></button>
+            <p className="mt-3 text-sm text-slate-500">The reopened Unit 603 sink is the top card in <button onClick={() => navigate("/staff")} className="font-semibold text-slate-800 underline">Needs Your Attention</button> — inspect the real record.</p>
           </div>
         )}
       </div>

@@ -16,7 +16,7 @@ def build_pdf(title, sections):
     h1 = ParagraphStyle("h1", parent=styles["Title"], fontSize=20, spaceAfter=14)
     h2 = ParagraphStyle("h2", parent=styles["Heading2"], fontSize=13, spaceBefore=10, spaceAfter=6)
     body = ParagraphStyle("body", parent=styles["BodyText"], fontSize=10.5, leading=15, spaceAfter=6)
-    story = [Paragraph(title, h1), Paragraph("Rivergate Commons &mdash; Resident Policy", styles["Italic"]), Spacer(1, 12)]
+    story = [Paragraph(title, h1), Paragraph("Riverside Luxury Residences &mdash; Resident Policy", styles["Italic"]), Spacer(1, 12)]
     for heading, paras in sections:
         story.append(Paragraph(heading, h2))
         for p in paras:

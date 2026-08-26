@@ -48,5 +48,16 @@ Phase 1 (skeleton, NO AI): MVP web app for multifamily property management. Resi
 - P1: AI triage (auto category/priority/lane/intent/sentiment), resident chat replies UI.
 - P2: multi-property scoping, batch resident lookups (N+1), staff roles/permissions.
 
+## Contest polish (2026-06)
+- Added compact Business Impact strip to Staff Dashboard Overview (data-testid=impact-strip): 5 dynamic metrics from GET /api/impact (Handled without management %, Estimated time saved h, Resident-confirmed resolution %, Repeat issues detected, Failed resolutions surfaced), DEMO ENVIRONMENT badge + tooltips, "View Impact" -> /staff/insights. Placed above "Needs Your Attention" (kept as primary section). Mobile = 2-col grid, desktop = divided flex strip.
+- Aligned /api/impact resident_confirmed_rate to compute over status==resolved (matches dashboard Confirmed Resolution card; was diverging 0% vs 100%).
+- Polish: resident submission-result now renders the RESOLVE auto_response + Source immediately (submission-answer); Demo Mode Act 3 numbers aligned to live 603 record (attempts 1, attention 96); renamed seeded "Water Report 70x" residents to real names (units 701-704); fixed property doc footer to "Riverside Luxury Residences".
+- QA: testing_agent iteration_8 -> 15/15 backend pytest PASS, all asserted frontend flows PASS (impact strip, Resolution Memory 603 reopen with no duplicate, RESOLVE/ACTION/REVIEW/P0 triage, confirmation Yes/No, demo mode acts 1-5, resident submit + My Requests, desktop+mobile). No critical/UI bugs.
+
+## Known non-blocking notes
+- /api/impact internally calls dashboard() (N+1 FRT loop runs twice per Overview load); cheap at current volume.
+- Resolution Memory matching is LLM-only (no deterministic fallback) - headline feature depends on Claude availability.
+- Public resident portal fires /api/auth/me -> 401 on load (harmless console noise).
+
 ## Next Tasks
 - Begin Phase 2 AI intelligence when requested.

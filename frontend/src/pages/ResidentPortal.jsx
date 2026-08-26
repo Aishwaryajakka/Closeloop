@@ -170,6 +170,13 @@ export default function ResidentPortal() {
               {result.lane === "RESOLVE" && <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600" /> Answered from property documents</li>}
               {result.lane === "REVIEW" && !result.matched_existing && <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600" /> Sent to the property team for review</li>}
             </ul>
+            {result.lane === "RESOLVE" && result.auto_response && (
+              <div data-testid="submission-answer" className="mt-4 rounded-lg bg-emerald-50 border border-emerald-200 p-3">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-700 mb-0.5">Answer</p>
+                <p className="text-sm text-slate-700">{result.auto_response}</p>
+                {result.answer_source && <p className="mt-1 text-xs text-emerald-700">Source: {result.answer_source}</p>}
+              </div>
+            )}
             <p className="mt-4 text-sm text-slate-500">You don't need to submit another request. We'll keep this issue together and update you here.</p>
             <button data-testid="submit-another-btn" onClick={() => setResult(null)} className="mt-3 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors duration-200">Report something else</button>
           </div>

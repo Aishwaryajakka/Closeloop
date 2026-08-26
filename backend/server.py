@@ -1323,6 +1323,47 @@ async def insights(user=Depends(get_current_user)):
     }
 
 
+@api_router.get("/impact")
+async def impact(user=Depends(get_current_user)):
+    issues = await db.issues.find({}, {"_id": 0}).to_list(5000)
+    total = len(issues)
+    automated = sum(1 for i in issues if i.get("lane") in ("RESOLVE", "ACTION"))
+    reviews = sum(1 for i in issues if i.get("lane") == "REVIEW")
+    repeat = sum(1 for i in issues if i.get("repeat_complaint"))
+    failed = sum(1 for i in issues if i.get("failed_resolution") or (i.get("resolution_attempts") or 0) > 0)
+    duplicates_prevented = sum(max((i.get("contact_count") or 1) - 1, 0) for i in issues)
+    resolved_issues = [i for i in issues if i.get("status") == "resolved"]
+    confirmed = sum(1 for i in resolved_issues if i.get("resident_confirmed"))
+    conf_rate = round(100 * confirmed / len(resolved_issues)) if resolved_issues else 0
+    automation_rate = round(100 * automated / total) if total else 0
+    MIN_PER = 8
+    hours_saved = round(automated * MIN_PER / 60, 1)
+    dash = await dashboard(user)
+    return {
+        "total_interactions": total,
+        "automation_rate": automation_rate,
+        "interactions_automated": automated,
+        "human_reviews": reviews,
+        "median_first_response_seconds": dash["median_first_response_seconds"],
+        "resident_confirmed_rate": conf_rate,
+        "repeat_complaints": repeat,
+        "duplicates_prevented": duplicates_prevented,
+        "failed_resolutions": failed,
+        "hours_saved": hours_saved,
+        "assumed_minutes_per_interaction": MIN_PER,
+    }
+
+
+@api_router.post("/demo/reset")
+async def demo_reset(user=Depends(get_current_user)):
+    import subprocess
+    def _seed():
+        return subprocess.run(["python", str(ROOT_DIR / "seed_demo.py")], capture_output=True, text=True, timeout=120)
+    r = await run_in_threadpool(_seed)
+    ok = r.returncode == 0
+    return {"ok": ok, "output": (r.stdout or r.stderr).strip()[-300:]}
+
+
 @api_router.get("/")
 async def root():
     return {"message": "CloseLoop API"}

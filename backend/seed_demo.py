@@ -198,9 +198,10 @@ async def run():
                                    "Meet with both residents and issue a formal quiet-hours notice."))
 
     # ---------- Building-wide water outage (Step 12) ----------
+    water_names = ["Sarah Chen", "Marcus Bell", "Priya Nair", "Tom Reyes"]
     for i, unit in enumerate(["701", "702", "703", "704"]):
         created = iso(hours=1, minutes=10 - i * 3)
-        await add(pid, f"Water Report {unit}", unit, "There's no water coming out of any tap in my unit.", created,
+        await add(pid, water_names[i], unit, "There's no water coming out of any tap in my unit.", created,
                   [("resident", "There's no water coming out of any tap in my unit.", created, {"intent": "wants to report a problem", "sentiment": "anxious"})],
                   category="maintenance", lane="REVIEW", priority="P1", sentiment="anxious",
                   multiple_residents_affected=True, human_judgment_required=True,
