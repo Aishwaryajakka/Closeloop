@@ -1,0 +1,109 @@
+{
+  "theme": "Light theme preferred for clear, professional property management SaaS aesthetic. Ensures high trust, readability, and a non-clinical feel.",
+  "typography": {
+    "font_family": {
+      "heading": "Manrope, sans-serif",
+      "body": "Inter, sans-serif",
+      "mono": "JetBrains Mono, monospace"
+    },
+    "hierarchy": {
+      "h1": "text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900",
+      "h2": "text-2xl md:text-3xl font-bold tracking-tight text-slate-800",
+      "h3": "text-xl font-semibold tracking-tight text-slate-800",
+      "h4": "text-lg font-semibold tracking-tight text-slate-800",
+      "body": "text-base font-normal leading-relaxed text-slate-600",
+      "small": "text-sm font-medium text-slate-500",
+      "label": "text-xs font-bold uppercase tracking-widest text-slate-400"
+    }
+  },
+  "colors": {
+    "background": {
+      "default": "bg-slate-50",
+      "surface": "bg-white",
+      "chat_bubble_resident": "bg-slate-900 text-white",
+      "chat_bubble_system": "bg-slate-100 text-slate-900"
+    },
+    "primary": {
+      "default": "bg-slate-900",
+      "hover": "hover:bg-slate-800",
+      "text": "text-white"
+    },
+    "text": {
+      "primary": "text-slate-900",
+      "secondary": "text-slate-600",
+      "muted": "text-slate-400"
+    },
+    "status": {
+      "open": "bg-amber-100 text-amber-800 border-amber-200",
+      "in_progress": "bg-blue-100 text-blue-800 border-blue-200",
+      "resolved": "bg-emerald-100 text-emerald-800 border-emerald-200",
+      "urgent": "bg-red-100 text-red-800 border-red-200"
+    },
+    "border": "border-slate-200",
+    "forbidden_colors": ["#1B93A4", "teal green", "teal blue"]
+  },
+  "visual_enhancers": {
+    "shadows": {
+      "sm": "shadow-sm",
+      "card": "shadow-[0_2px_8px_-2px_rgba(15,23,42,0.08)]",
+      "floating": "shadow-[0_12px_32px_-4px_rgba(15,23,42,0.12)]"
+    },
+    "borders": {
+      "radius_default": "rounded-lg",
+      "radius_chat": "rounded-2xl",
+      "radius_button": "rounded-full"
+    },
+    "glassmorphism": "backdrop-blur-xl bg-white/80 border-b border-slate-200/50"
+  },
+  "component_strategies": {
+    "data_table": "Use Shadcn Table. Features: sticky header, left-aligned text, right-aligned numbers. Badges for Status/Priority. Inline row hover actions. Use neutral borders (`border-slate-200`). Ensure dense view for data scannability.",
+    "chat_interface": "Resident view. Bottom sticky input area (textarea + submit). Bubbles for history. Resident messages on the right (slate-900), System/Staff messages on the left (slate-100). Clean borders. Max-width constraints to maintain readability.",
+    "sidebar": "Staff view. Narrow vertical sidebar (`w-64`) with clear icon+text links. `bg-white` with right border `border-slate-200`.",
+    "badges": "Pill-shaped (`rounded-full`) with soft background colors and darker text for readability (e.g. status/lanes).",
+    "detail_panel": "Use a sliding Side Panel (Shadcn Sheet) for issue details to keep context of the table. Include a vertical timeline for interaction history.",
+    "login_screen": "Split screen layout: Left side clean login form (Google SSO button prominent), Right side high-quality property image."
+  },
+  "grids_and_layouts": {
+    "dashboard": "High Density Grid. Sidebar + Main Content area. Table takes full width of main area (`flex-1`). Strict alignment, 100% pixel utilization.",
+    "resident_form": "Mobile-first centered layout. Max width `max-w-2xl` for chat interface. Generous padding (`p-6` or `p-8`), floating above the background."
+  },
+  "motion_and_interactions": {
+    "hover_states": "Subtle background shifts (e.g., `hover:bg-slate-100` on rows) and icon color changes. Must explicitly set text color on hover.",
+    "transitions": "Use specific transitions: `transition-colors duration-200`, `transition-transform duration-200 ease-out`. Never use `transition-all`.",
+    "chat_entry": "Staggered fade-up animation for new chat bubbles.",
+    "sheet_slide": "Smooth transform for the detail view sliding from the right."
+  },
+  "accessibility": {
+    "contrast": "Ensure all text meets at least 4.5:1 ratio. No light gray text on white backgrounds.",
+    "forms": "All inputs must have associated labels. Chat input must handle Enter/Shift+Enter properly.",
+    "testing": "All interactive elements MUST include `data-testid` (e.g., `data-testid=\"submit-issue-btn\"`, `data-testid=\"staff-login-btn\"`).",
+    "focus": "Clear focus rings: `focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2`."
+  },
+  "media_and_icons": {
+    "icon_library": "lucide-react (clean, minimal, standard for Shadcn).",
+    "images": {
+      "login_background": {
+        "url": "https://images.unsplash.com/photo-1624204386084-dd8c05e32226?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzR8MHwxfHNlYXJjaHwyfHxtb2Rlcm4lMjBhcGFydG1lbnQlMjBidWlsZGluZyUyMGV4dGVyaW9yfGVufDB8fHx8MTc4NzcyMTE0Nnww&ixlib=rb-4.1.0&q=85",
+        "description": "A modern apartment building with glass balconies reflecting a soft pink sky (used for the staff login right-side panel)."
+      }
+    }
+  },
+  "instructions_to_main_agent": [
+    "Build the UI focusing on a clean, professional property management SaaS feel using the specified Slate/Indigo neutral theme.",
+    "For the Resident side, build a chat-style interface. Do not require login. Prompt for name, unit, message, and optional category in a conversational flow or a simple form that mimics chat bubbles. Allow them to see submitted requests status.",
+    "For the Staff side, build a data-heavy dashboard with Shadcn table. Include columns: Unit, Resident, Category, Priority, Lane, Status, Assigned team, Created time.",
+    "Use a Slide-over (Sheet) for the Staff Issue Detail View, featuring a timeline of interactions and status/lane/team update dropdowns.",
+    "Adhere strictly to the color palette (slate variants). Teal is completely forbidden for this dashboard.",
+    "Ensure all buttons, inputs, and links have a `data-testid` attribute for automated testing.",
+    "Use sonner for toast notifications.",
+    "Implement Google Login screen for the staff side (UI only)."
+  ],
+  "universal_guidelines": [
+    "Avoid generic centered layouts except for the resident chat container which should be max-width centered.",
+    "Do not use generic transitions like 'transition: all'. Explicitly define properties.",
+    "Never use fully transparent backgrounds on overlays/dropdowns. Use glassmorphism or solid backgrounds.",
+    "Create depth using the defined subtle shadows and borders, avoiding flat 'AI slop' aesthetics.",
+    "Provide empty states for data tables using illustrations or clear typography.",
+    "Ensure generous padding (`p-6` to `p-12`) inside major container blocks."
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "summary": "Full backend + frontend E2E testing of PropTriage Phase 1. Backend: 24 pytest cases across /api/config, public issue creation, resident lookup/reply, auth protection (cookie + Bearer), issue list/detail/stats, PATCH enum validation + system logging, staff messaging. 23/24 passed (only failure is an intentional negative test proving assigned_team is not validated). Frontend: resident portal submit (category empty) with success toast + My Requests lookup with status badge; /staff redirect to login when unauthenticated; staff dashboard with injected session cookie rendering all columns, stats, search + status filters, detail Sheet with Status/Priority/Lane/Team dropdowns persisting to DB and appending system interactions, staff message appended and persisted after refresh, logout clearing session. No blocking issues found.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "PATCH /api/issues/{id}", "issue": "assigned_team accepts any arbitrary string (e.g. 'TEST_NotATeam') and returns 200; status/lane/priority are validated but team is not checked against TEAM_VALUES. Should return 400 for unknown team (allow null to unassign)."},
+      {"endpoint": "POST /api/issues", "issue": "No length/whitespace validation: empty-string name/unit/message pass Pydantic and create an issue. Recommend min_length constraints + trimming (frontend does block empty, backend does not)."},
+      {"endpoint": "POST /api/issues", "issue": "Resident matching is on exact name+unit string, so 'maria garcia' vs 'Maria Garcia' or trailing spaces creates a duplicate resident record; My Requests lookup then misses prior requests. Consider case-insensitive/trimmed matching."},
+      {"endpoint": "POST /api/issues", "issue": "Returns 200 for a create; 201 would be more correct."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "IssueDetailSheet (SheetContent)", "issue": "Radix a11y console error on every open: 'DialogContent requires a DialogTitle'. Add a SheetTitle (wrap in VisuallyHidden if not visually needed).", "selector": "[data-testid=\"issue-detail-sheet\"]", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Staff dashboard / detail sheet", "issues": ["Lane/status are shown title-cased ('Resolve', 'Review') in the table/dropdowns while backend enum is RESOLVE/REVIEW and the system timeline log says 'Lane set to RESOLVE' - slightly inconsistent wording for staff, cosmetic only.", "Sidebar has only a single 'All Issues' item with a lot of empty space; fine for MVP but looks unfinished."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/backend_test.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "Validate assigned_team against TEAM_VALUES in PATCH /api/issues/{id} (return 400 on unknown team).",
+    "Add server-side validation (min_length / strip) for name, unit, message on POST /api/issues.",
+    "Add a SheetTitle (VisuallyHidden) to IssueDetailSheet to remove the Radix accessibility console error.",
+    "Optional: case-insensitive + trimmed resident matching so 'My Requests' lookup is reliable."
+  ],
+  "critical_code_review_comments": [
+    "list_issues does one residents.find_one per issue (N+1 queries). Fine for 5 issues, but batch with a single $in query before scale.",
+    "POST /api/residents/requests and POST /api/issues silently fall back to 'the first property' via find_one({}); with multiple properties this becomes non-deterministic. Scope by property_id explicitly.",
+    "Auth cookie/Bearer handling, _id exclusion, async motor usage and status codes all look correct; no blocking code issues."
+  ],
+  "updated_files": ["/app/backend/tests/backend_test.py"],
+  "success_rate": {"backend": "96% (23/24; single failure is a negative test for missing team validation)", "frontend": "100% of tested flows"},
+  "seed_data_creation": "Injected staff user test-user-qa-1 / session token test_session_qa_1 into test_database (users, user_sessions) and created TEST_-prefixed residents/issues; ALL of it was deleted after testing. DB restored to seeded state: 1 property, 50 residents, 5 issues.",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "No app passwords. /app/memory/test_credentials.md is accurate; session-injection per /app/auth_testing.md works (cookie session_token or Authorization: Bearer).",
+  "context_for_next_testing_agent": "backend_test.py uses SESSION_TOKEN='test_session_qa_1' - re-inject the user/session in mongo (users.user_id='test-user-qa-1') before running, since cleanup removed it. Playwright staff tests need context.add_cookies session_token on domain triage-skeleton.preview.emergentagent.com. Lane/Status dropdown options are title-cased ('Resolve', 'In Progress'), not enum-cased. All 5 seeded issues + 50 residents intact.",
+  "rca_of_the_issue": "assigned_team failure RCA: update_issue validates status/lane/priority against their enum lists but assigns payload.assigned_team directly to updates without a TEAM_VALUES membership check (server.py lines 333-335), so any string persists and shows in the dashboard 'Assigned Team' column."
+}
