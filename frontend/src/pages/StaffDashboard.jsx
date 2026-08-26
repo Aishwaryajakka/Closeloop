@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Search, Inbox, RefreshCw, ShieldAlert, Layers, Info, ArrowRight, RotateCcw, Camera, MessageSquare, Sparkles, Wrench, Scale, Clock, ShieldCheck } from "lucide-react";
+import { Search, Inbox, RefreshCw, ShieldAlert, Layers, Info, ArrowRight, RotateCcw, Camera, MessageSquare, Sparkles, Wrench, Scale, Clock, ShieldCheck, Play } from "lucide-react";
 import html2canvas from "html2canvas";
 import api from "@/lib/api";
 import { toast } from "sonner";
@@ -278,7 +278,7 @@ export default function StaffDashboard() {
       </button>
       <a href="/staff/demo" data-testid="run-demo-btn"
         className="inline-flex items-center gap-1.5 rounded-full bg-brand-700 hover:bg-brand-800 text-white px-3.5 py-2 text-sm font-semibold transition-colors duration-200">
-        ▶ Run Demo
+        <Play className="h-4 w-4" /> Run Demo
       </a>
       <button data-testid="refresh-btn" onClick={load}
         className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3.5 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors duration-200">

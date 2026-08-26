@@ -93,6 +93,11 @@ Phase 1 (skeleton, NO AI): MVP web app for multifamily property management. Resi
 ## Demo experience polish (2026-06)
 - DemoMode: replaced anonymous progress dots with a numbered workflow step indicator (01 Inbox → 05 Dashboard, clickable, labels collapse on mobile); aligned the shell to CloseLoop blue (logo + primary/exit buttons); applied teal/red semantic palette to the Resolution Memory timeline and softened the failed-resolution panel from saturated orange to pale red. Icons remain lucide SVG (no emoji). Demo logic/sequence unchanged.
 
+## UI consolidation + brand logo (2026-06)
+- Replaced BrandMark with the uploaded CloseLoop interlocking two-arrow loop mark (square 32-viewBox, currentColor). Because BrandMark is the single shared logo, the new mark propagates to staff sidebar, Staff Login, public header/footer, Demo, mobile drawer, and Resident Portal at once.
+- Removed unicode-glyph icons: "▶ Run Demo" → lucide Play icon; demo "confirmed resolution ✓" glyph removed (timeline node already shows a Check). Verified zero ▶/✓/★ glyph icons remain in pages/components.
+- Confirmed typography already unified (Manrope headings / Inter body) and shared systems (staff shell, one issues table, constants pills, IssueDetailSheet drawer) already consistent from prior passes — no rebuilds needed.
+
 ## Full-app visual pass to ZIP references (2026-06)
 - Applied approved ZIP redesign to the EXISTING app via shared components (no rebuilds, no logic/API changes). Demo (DemoMode) and public Home already matched the references — left untouched.
 - StaffLayout shell: new top bar with global search (?q= wired to All Issues table search), notification bell (→ Needs Attention, red dot when >0) and help; sidebar active state changed to neutral gray + brand left indicator + brand icon. Propagates to every staff route (Overview, all issue queues, Knowledge Base, Analytics).
