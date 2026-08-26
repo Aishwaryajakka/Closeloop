@@ -61,3 +61,17 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 .animate-fade-up {
     animation: fade-up 0.35s ease-out both;
 }
+
+/* Intelligence Flow (Product page) reveal — runs once on viewport entry */
+@keyframes flow-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes flow-line {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+}
+.flow-stage { opacity: 0; }
+.flow-line { transform: scaleX(0); transform-origin: left center; }
+.flow-in-view .flow-stage { animation: flow-in 0.5s ease-out forwards; }
+.flow-in-view .flow-line { animation: flow-line 0.7s ease-out forwards; }

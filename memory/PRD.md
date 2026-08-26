@@ -74,6 +74,11 @@ Phase 1 (skeleton, NO AI): MVP web app for multifamily property management. Resi
 ### QA
 - iteration_9: 25/27 backend + 95% frontend pass. Fixed post-QA: rate-limit via X-Forwarded-For (verified 6th=429), reject empty email local part (verified 400), /staff/leads demo guard, /api/auth/me 401 noise skipped on public routes, App.js `React is not defined` runtime error.
 
+## Design refinement — public site (2026-06)
+- Refined CloseLoop brand mark (geometric incomplete resolution ring + completion check) in BrandMark.jsx — propagates to all surfaces (public header/footer, resident portal, staff login/dashboard, demo).
+- Redesigned Product/"How It Works" page: compact editorial hero + mini product-concept visual (message → CloseLoop → RESOLVE/ACTION/REVIEW → reopened), horizontal 5-stage Intelligence Flow (Intake→Intelligence→Decision→Execution→Resolution) with the Intelligence stage as a deep-blue glow center, SVG connector line, concise per-stage captions, and a scroll-triggered reveal (~800-1100ms, once). Converts to vertical on mobile. Semantic lane accents: RESOLVE=teal, ACTION=brand blue, REVIEW=champagne. Tightened spacing; editorial two-column sections replace stacked boxes.
+- Public nav: Product is now a compact dropdown (Overview / How It Works / Resolution Memory→/#resolution-memory) with chevron; homepage "See How It Works" -> /product. Flow animation keyframes added to index.css.
+
 ## Next Tasks
 - Optional: move lead rate-limit counter to a shared/Mongo TTL store (survives restarts, multi-worker).
 - Optional: split server.py (1686 lines) into routers.

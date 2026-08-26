@@ -2,13 +2,18 @@ import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { BrandMark } from "@/components/BrandMark";
 import { useDemoEntry } from "@/lib/useDemoEntry";
-import { ArrowRight, Menu, X } from "lucide-react";
+import { ArrowRight, Menu, X, ChevronDown } from "lucide-react";
 
 const NAV = [
-  { to: "/product", label: "Product" },
   { to: "/pricing", label: "Pricing" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
+];
+
+const PRODUCT_MENU = [
+  { to: "/product", label: "Overview", desc: "What CloseLoop is" },
+  { to: "/product", label: "How It Works", desc: "The intelligence flow" },
+  { to: "/#resolution-memory", label: "Resolution Memory", desc: "Track true resolution" },
 ];
 
 export function PublicHeader() {
@@ -18,14 +23,30 @@ export function PublicHeader() {
   return (
     <header className="sticky top-0 z-30 backdrop-blur-xl bg-white/85 border-b border-slate-200/70">
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <Link to="/" data-testid="public-logo" className="flex items-center gap-2">
+        <Link to="/" data-testid="public-logo" className="flex items-center gap-2.5">
           <div className="h-8 w-8 rounded-lg bg-brand-700 flex items-center justify-center">
-            <BrandMark className="h-4.5 w-4.5 text-white" />
+            <BrandMark className="h-5 w-5 text-white" />
           </div>
           <span className="font-heading font-extrabold tracking-tight text-slate-900 text-lg">CloseLoop</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-7">
+          <div className="relative group">
+            <button data-testid="nav-product" className={`inline-flex items-center gap-1 text-sm font-semibold transition-colors ${location.pathname === "/product" ? "text-slate-900" : "text-slate-500 group-hover:text-slate-900"}`}>
+              Product <ChevronDown className="h-3.5 w-3.5" />
+            </button>
+            <div className="absolute left-0 top-full pt-3 hidden group-hover:block">
+              <div className="w-56 rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-900/5 p-1.5" data-testid="product-menu">
+                {PRODUCT_MENU.map((m) => (
+                  <Link key={m.label} to={m.to} data-testid={`product-menu-${m.label.replace(/\s+/g, "-").toLowerCase()}`}
+                    className="block rounded-lg px-3 py-2 hover:bg-slate-50 transition-colors">
+                    <p className="text-sm font-semibold text-slate-900">{m.label}</p>
+                    <p className="text-xs text-slate-500">{m.desc}</p>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
           {NAV.map((n) => (
             <Link key={n.to} to={n.to} data-testid={`nav-${n.label.toLowerCase()}`}
               className={`text-sm font-semibold transition-colors ${location.pathname === n.to ? "text-slate-900" : "text-slate-500 hover:text-slate-900"}`}>
@@ -48,6 +69,8 @@ export function PublicHeader() {
       </div>
       {open && (
         <div className="md:hidden border-t border-slate-200 bg-white px-6 py-4 space-y-3">
+          <Link to="/product" onClick={() => setOpen(false)} className="block text-sm font-semibold text-slate-700">Product</Link>
+          <Link to="/#resolution-memory" onClick={() => setOpen(false)} className="block pl-4 text-sm text-slate-500">— Resolution Memory</Link>
           {NAV.map((n) => (
             <Link key={n.to} to={n.to} onClick={() => setOpen(false)} className="block text-sm font-semibold text-slate-700">{n.label}</Link>
           ))}

@@ -85,7 +85,7 @@ export default function Home() {
       </section>
 
       {/* Resolution Memory */}
-      <section className="max-w-6xl mx-auto px-6 py-16 md:py-20">
+      <section id="resolution-memory" className="max-w-6xl mx-auto px-6 py-16 md:py-20">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-brand-700">Resolution Memory</p>
