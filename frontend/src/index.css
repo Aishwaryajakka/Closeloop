@@ -75,3 +75,19 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 .flow-line { transform: scaleX(0); transform-origin: left center; }
 .flow-in-view .flow-stage { animation: flow-in 0.5s ease-out forwards; }
 .flow-in-view .flow-line { animation: flow-line 0.7s ease-out forwards; }
+
+/* Global public scroll-reveal — reveals each section once as it enters the viewport */
+.reveal-scope section {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.55s cubic-bezier(0.22, 0.61, 0.36, 1), transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.reveal-scope section.reveal-in {
+    opacity: 1;
+    transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+    .reveal-scope section { opacity: 1 !important; transform: none !important; transition: none !important; }
+    .flow-stage, .flow-line { animation: none !important; opacity: 1 !important; transform: none !important; }
+    .animate-fade-up { animation: none !important; }
+}

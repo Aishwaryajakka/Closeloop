@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { BrandMark } from "@/components/BrandMark";
 import { useDemoEntry } from "@/lib/useDemoEntry";
@@ -20,8 +20,15 @@ export function PublicHeader() {
   const enterDemo = useDemoEntry();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
   return (
-    <header className="sticky top-0 z-30 backdrop-blur-xl bg-white/85 border-b border-slate-200/70">
+    <header className={`sticky top-0 z-30 transition-all duration-200 ${scrolled ? "bg-white/95 backdrop-blur-xl border-b border-slate-200/70 shadow-sm" : "bg-white border-b border-transparent"}`}>
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <Link to="/" data-testid="public-logo" className="flex items-center gap-2.5">
           <div className="h-8 w-8 rounded-lg bg-brand-700 flex items-center justify-center">
@@ -35,7 +42,7 @@ export function PublicHeader() {
             <button data-testid="nav-product" className={`inline-flex items-center gap-1 text-sm font-semibold transition-colors ${location.pathname === "/product" ? "text-slate-900" : "text-slate-500 group-hover:text-slate-900"}`}>
               Product <ChevronDown className="h-3.5 w-3.5" />
             </button>
-            <div className="absolute left-0 top-full pt-3 hidden group-hover:block">
+            <div className="absolute left-0 top-full pt-3 opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 transition-all duration-200">
               <div className="w-56 rounded-xl border border-slate-200 bg-white shadow-lg shadow-slate-900/5 p-1.5" data-testid="product-menu">
                 {PRODUCT_MENU.map((m) => (
                   <Link key={m.label} to={m.to} data-testid={`product-menu-${m.label.replace(/\s+/g, "-").toLowerCase()}`}
@@ -129,10 +136,21 @@ export function PublicFooter() {
 }
 
 export default function PublicLayout({ children }) {
+  const location = useLocation();
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      const els = Array.from(document.querySelectorAll(".reveal-scope section"));
+      const obs = new IntersectionObserver((entries) => {
+        entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("reveal-in"); obs.unobserve(e.target); } });
+      }, { threshold: 0.12 });
+      els.forEach((el) => obs.observe(el));
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [location.pathname]);
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <PublicHeader />
-      <main className="flex-1">{children}</main>
+      <main className="reveal-scope flex-1">{children}</main>
       <PublicFooter />
     </div>
   );

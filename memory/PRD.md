@@ -79,6 +79,13 @@ Phase 1 (skeleton, NO AI): MVP web app for multifamily property management. Resi
 - Redesigned Product/"How It Works" page: compact editorial hero + mini product-concept visual (message → CloseLoop → RESOLVE/ACTION/REVIEW → reopened), horizontal 5-stage Intelligence Flow (Intake→Intelligence→Decision→Execution→Resolution) with the Intelligence stage as a deep-blue glow center, SVG connector line, concise per-stage captions, and a scroll-triggered reveal (~800-1100ms, once). Converts to vertical on mobile. Semantic lane accents: RESOLVE=teal, ACTION=brand blue, REVIEW=champagne. Tightened spacing; editorial two-column sections replace stacked boxes.
 - Public nav: Product is now a compact dropdown (Overview / How It Works / Resolution Memory→/#resolution-memory) with chevron; homepage "See How It Works" -> /product. Flow animation keyframes added to index.css.
 
+## Staff workspace + Ops Intelligence + public motion polish (2026-06)
+- Staff sidebar restructured into grouped WORKSPACE/ISSUES/OPERATIONS with count badges + active states; one shared BrandMark logo. Issue sub-views driven by /staff?view=needs|review|action|resolved|failed|all (removed the duplicate pill row). Overview compacted: slim shared-incident bar (Overview-only), impact strip, single operational metrics row (replaced the 8-card grid), Needs Your Attention high with "View all". Added a mobile hamburger + drawer (below md) reusing the nav; responsive header.
+- Analytics rebuilt as "Operations Intelligence" (client-side from /issues, recharts): time-range toggles, KPI strip, issue-trend area/line chart with series toggles, category breakdown, resolution quality, property hotspots, human attention, repeat & failed table. No backend changes.
+- Public site motion/brand polish: global scroll-reveal (per-section, once, prefers-reduced-motion aware), sticky header scrolled state, animated Product dropdown, Pricing card hover (lift/scale/shadow) with teal checks, About headline line-reveal + staggered bullets, tightened How-It-Works flow (max-w-5xl) and Resolution Memory (45/55).
+- Fixed iteration_10 items: navigate hook scope, mobile nav/signout gap, header wrap, clipped chart Y-axis, sub-view titles use sidebar labels, shared-incident scoped to Overview, duplicate tracking class.
+- QA: iteration_10 frontend 95% pass (staff redesign) + visual verification of public polish (no runtime errors). Mobile drawer verified present in DOM (screenshot tool forces desktop width so drawer open not captured).
+
 ## Next Tasks
 - Optional: move lead rate-limit counter to a shared/Mongo TTL store (survives restarts, multi-worker).
 - Optional: split server.py (1686 lines) into routers.

@@ -6,7 +6,7 @@ import { Check } from "lucide-react";
 
 function Tier({ name, price, unit, tagline, features, cta, ctaTo, ctaAction, secondary, popular, note }) {
   return (
-    <div data-testid={`tier-${name.toLowerCase()}`} className={`relative rounded-2xl border p-6 flex flex-col ${popular ? "border-brand-700 shadow-lg ring-1 ring-brand-700" : "border-slate-200 shadow-sm"}`}>
+    <div data-testid={`tier-${name.toLowerCase()}`} className={`relative rounded-2xl border p-6 flex flex-col transition-[transform,box-shadow] duration-300 will-change-transform hover:-translate-y-1.5 hover:shadow-2xl ${popular ? "border-brand-700 shadow-lg ring-1 ring-brand-700 hover:scale-[1.01]" : "border-slate-200 shadow-sm hover:border-slate-300"}`}>
       {popular && <span className="absolute -top-3 left-6 rounded-full bg-brand-700 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1">Most Popular</span>}
       <p className="font-heading text-lg font-extrabold tracking-tight text-slate-900">{name}</p>
       <div className="mt-2 flex items-baseline gap-1">
@@ -16,7 +16,7 @@ function Tier({ name, price, unit, tagline, features, cta, ctaTo, ctaAction, sec
       <p className="mt-2 text-sm text-slate-600 min-h-[40px]">{tagline}</p>
       <ul className="mt-5 space-y-2.5 text-sm text-slate-700 flex-1">
         {features.map((f) => (
-          <li key={f} className="flex items-start gap-2"><Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" /> {f}</li>
+          <li key={f} className="flex items-start gap-2"><Check className="h-4 w-4 text-teal-600 shrink-0 mt-0.5" /> {f}</li>
         ))}
       </ul>
       {ctaAction ? (

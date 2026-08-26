@@ -103,7 +103,7 @@ export default function Product() {
 
       {/* Intelligence Flow */}
       <section id="flow" className="bg-slate-50 border-y border-slate-200">
-        <div ref={flowRef} className={`max-w-6xl mx-auto px-6 py-12 md:py-14 ${seen ? "flow-in-view" : ""}`}>
+        <div ref={flowRef} className={`max-w-5xl mx-auto px-6 py-12 md:py-14 ${seen ? "flow-in-view" : ""}`}>
           <div className="flex items-end justify-between gap-4 flex-wrap">
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-slate-400">The Intelligence Flow</p>

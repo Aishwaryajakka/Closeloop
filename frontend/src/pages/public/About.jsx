@@ -6,7 +6,10 @@ export default function About() {
     <PublicLayout>
       <section className="max-w-3xl mx-auto px-6 py-16 md:py-20">
         <p className="text-xs font-bold uppercase tracking-widest text-brand-700">About</p>
-        <h1 className="mt-4 font-heading text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">Resident operations should end in resolution.</h1>
+        <h1 className="mt-4 font-heading text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 leading-[1.08]">
+          <span className="block animate-fade-up" style={{ animationDelay: "80ms" }}>Resident operations should end</span>
+          <span className="block animate-fade-up" style={{ animationDelay: "220ms" }}>in resolution.</span>
+        </h1>
         <p className="mt-6 text-lg text-slate-600 leading-relaxed">
           Property teams manage resident interactions across portals, email, front desks, maintenance systems, and internal teams. The challenge isn't receiving another request — it's understanding what the resident needs, getting it to the right place, and knowing whether the problem was actually solved.
         </p>
@@ -15,8 +18,8 @@ export default function About() {
         </div>
         <p className="mt-8 text-slate-600 leading-relaxed">CloseLoop combines:</p>
         <ul className="mt-4 space-y-2.5 text-slate-700">
-          {["AI request understanding", "Property knowledge", "Intelligent routing", "Resolution Memory", "Resident confirmation", "Human judgment"].map((t) => (
-            <li key={t} className="flex items-start gap-2.5"><span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-brand-700 shrink-0" /> {t}</li>
+          {["AI request understanding", "Property knowledge", "Intelligent routing", "Resolution Memory", "Resident confirmation", "Human judgment"].map((t, idx) => (
+            <li key={t} className="flex items-start gap-2.5 animate-fade-up" style={{ animationDelay: `${300 + idx * 80}ms` }}><span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-teal-600 shrink-0" /> {t}</li>
           ))}
         </ul>
         <p className="mt-6 text-slate-600 leading-relaxed">— to help property teams close the communication and resolution loop.</p>

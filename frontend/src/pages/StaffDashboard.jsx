@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { Search, Inbox, RefreshCw, ShieldAlert, Layers, Info, ArrowRight, RotateCcw, Camera } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Search, Inbox, RefreshCw, ShieldAlert, Layers, Info, ArrowRight, RotateCcw, Camera, MessageSquare, Sparkles, Wrench, Scale, Clock } from "lucide-react";
 import html2canvas from "html2canvas";
 import api from "@/lib/api";
 import { toast } from "sonner";
@@ -143,7 +143,31 @@ function ImpactStrip({ impact }) {
   );
 }
 
-const TABS = ["Overview", "REVIEW", "ACTION", "AI Resolved", "Failed Resolutions", "All Issues"];
+function Metric({ Icon, value, label, accent }) {
+  return (
+    <div className="flex items-center gap-2.5 px-4 first:pl-0">
+      <Icon className={`h-[18px] w-[18px] shrink-0 ${accent || "text-slate-400"}`} strokeWidth={1.9} />
+      <div>
+        <p className="font-heading text-lg font-extrabold tracking-tight text-slate-900 leading-none tabular-nums">{value ?? "—"}</p>
+        <p className="text-[11px] text-slate-500 mt-0.5">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+function MetricsRow({ stats }) {
+  if (!stats) return null;
+  return (
+    <div data-testid="metrics-row" className="rounded-xl border border-slate-200 bg-white px-5 py-3.5 flex flex-wrap items-center gap-y-3 divide-x divide-slate-200">
+      <Metric Icon={MessageSquare} value={stats.resident_interactions_today} label="Interactions" />
+      <Metric Icon={Sparkles} value={stats.handled_automatically} label="AI Resolved" accent="text-emerald-600" />
+      <Metric Icon={Wrench} value={stats.actions_created} label="Actions" accent="text-brand-600" />
+      <Metric Icon={Scale} value={stats.human_reviews} label="Reviews" accent="text-amber-600" />
+      <Metric Icon={RotateCcw} value={stats.failed_resolutions} label="Failed" accent="text-red-600" />
+      <Metric Icon={Clock} value={fmtDuration(stats.median_first_response_seconds)} label="Median Response" />
+    </div>
+  );
+}
 
 function rank(i) {
   let r = 0;
@@ -163,6 +187,7 @@ function cardAccent(i) {
 
 export default function StaffDashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [issues, setIssues] = useState([]);
   const [stats, setStats] = useState(null);
   const [impact, setImpact] = useState(null);
@@ -170,7 +195,10 @@ export default function StaffDashboard() {
   const [loading, setLoading] = useState(true);
   const [resetting, setResetting] = useState(false);
   const [query, setQuery] = useState("");
-  const [tab, setTab] = useState("Overview");
+  const [searchParams] = useSearchParams();
+  const view = searchParams.get("view") || "";
+  const VIEW_TO_TAB = { review: "REVIEW", action: "ACTION", resolved: "AI Resolved", failed: "Failed Resolutions", all: "All Issues", needs: "Needs" };
+  const tab = VIEW_TO_TAB[view] || "Overview";
   const [selectedId, setSelectedId] = useState(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -221,6 +249,7 @@ export default function StaffDashboard() {
     else if (tab === "ACTION") list = issues.filter((i) => i.lane === "ACTION");
     else if (tab === "AI Resolved") list = issues.filter((i) => i.lane === "RESOLVE");
     else if (tab === "Failed Resolutions") list = issues.filter((i) => i.failed_resolution || (i.resolution_attempts || 0) > 0 || i.status === "reopened");
+    else if (tab === "Needs") list = issues.filter((i) => i.is_emergency || i.failed_resolution || (i.resolution_attempts || 0) > 0 || i.status === "reopened" || i.lane === "REVIEW");
     if (query) {
       const q = query.toLowerCase();
       list = list.filter((i) =>
@@ -252,11 +281,11 @@ export default function StaffDashboard() {
   );
 
   return (
-    <StaffLayout title="Good morning" headerAction={headerAction}>
+    <StaffLayout title={tab === "Overview" ? "Good morning" : ({ REVIEW: "Review", ACTION: "Action", "AI Resolved": "AI Resolved", "Failed Resolutions": "Failed Resolutions", "All Issues": "All Issues", Needs: "Needs Attention" }[tab] || tab)} headerAction={headerAction}>
       <div className="p-6 md:p-8 space-y-6">
-        <p className="text-slate-500 -mt-2">CloseLoop handled the routine. Here's what needs you.</p>
+        {tab === "Overview" && <p className="text-slate-500 -mt-2">CloseLoop handled the routine. Here's what needs you.</p>}
         {/* Shared incident */}
-        {incidents.length > 0 && incidents.map((inc, idx) => (
+        {tab === "Overview" && incidents.length > 0 && incidents.map((inc, idx) => (
           <div key={idx} data-testid="shared-incident-banner" className="rounded-xl border-l-4 border-l-violet-500 border border-violet-200 bg-violet-50 p-4 flex items-start gap-3">
             <Layers className="h-5 w-5 text-violet-600 shrink-0 mt-0.5" />
             <div>
@@ -269,22 +298,16 @@ export default function StaffDashboard() {
         {/* Business Impact strip (Overview only) */}
         {tab === "Overview" && <ImpactStrip impact={impact} />}
 
-        {/* Summary cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard testid="stat-interactions-today" label="Interactions Today" value={stats?.resident_interactions_today ?? "—"} />
-          <StatCard testid="stat-handled" label="Handled Automatically" value={stats?.handled_automatically ?? "—"} accent="text-emerald-600" />
-          <StatCard testid="stat-actions" label="Actions Created" value={stats?.actions_created ?? "—"} accent="text-blue-600" />
-          <StatCard testid="stat-reviews" label="Human Reviews" value={stats?.human_reviews ?? "—"} accent="text-amber-600" />
-          <StatCard testid="stat-failed" label="Failed Resolutions" value={stats?.failed_resolutions ?? "—"} accent="text-red-600" />
-          <StatCard testid="stat-confirmation" label="Confirmation Pending" value={stats?.confirmation_pending ?? "—"} accent="text-violet-600" />
-          <StatCard testid="stat-confirmed-rate" label="Confirmed Resolution" value={stats ? `${stats.resident_confirmed_rate}%` : "—"} accent="text-emerald-600" />
-          <StatCard testid="stat-median-frt" label="Median First Response" value={stats ? fmtDuration(stats.median_first_response_seconds) : "—"} />
-        </div>
+        {/* Compact operational metrics (Overview only) */}
+        {tab === "Overview" && <MetricsRow stats={stats} />}
 
         {/* Needs Your Attention */}
         {tab === "Overview" && (
           <div>
-            <h2 className="font-heading text-lg font-bold tracking-tight text-slate-900 mb-3">Needs Your Attention</h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-heading text-lg font-bold tracking-tight text-slate-900">Needs Your Attention</h2>
+              <button onClick={() => navigate("/staff?view=needs")} className="text-sm font-semibold text-brand-700 hover:text-brand-800 inline-flex items-center gap-1">View all <ArrowRight className="h-4 w-4" /></button>
+            </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3" data-testid="needs-attention">
               {needsAttention.map((i) => (
                 <button key={i.id} data-testid={`attention-card-${i.id}`} onClick={() => openIssue(i.id)}
@@ -311,15 +334,7 @@ export default function StaffDashboard() {
         )}
 
         {/* Tabs */}
-        <div className="flex gap-1.5 flex-wrap border-b border-slate-200 pb-3">
-          {TABS.map((t) => (
-            <button key={t} data-testid={`tab-${t.replace(/\s+/g, "-").toLowerCase()}`} onClick={() => setTab(t)}
-              className={`rounded-full px-3.5 py-2 text-xs font-semibold transition-colors duration-200 ${tab === t ? "bg-brand-700 text-white" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100"}`}>
-              {t}
-            </button>
-          ))}
-        </div>
-
+        {tab !== "Overview" && (<>
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -373,6 +388,7 @@ export default function StaffDashboard() {
             </Table>
           </div>
         </div>
+        </>)}
       </div>
 
       <IssueDetailSheet issueId={selectedId} open={sheetOpen} onOpenChange={setSheetOpen} onUpdated={load} />
