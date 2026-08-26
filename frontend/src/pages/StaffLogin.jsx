@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { BrandMark } from "@/components/BrandMark";
-import { ShieldCheck, ArrowRight } from "lucide-react";
+import { ShieldCheck, ArrowRight, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
@@ -31,11 +31,16 @@ export default function StaffLogin() {
     <div className="min-h-screen grid lg:grid-cols-2">
       {/* Left: form */}
       <div className="flex flex-col justify-between p-8 lg:p-14 bg-white">
-        <div className="flex items-center gap-2">
-          <div className="h-9 w-9 rounded-lg bg-brand-700 flex items-center justify-center">
-            <BrandMark className="h-5 w-5 text-white" />
-          </div>
-          <span className="font-heading font-extrabold text-lg tracking-tight text-slate-900">CloseLoop</span>
+        <div className="flex items-center gap-4">
+          <Link to="/" data-testid="staff-login-logo-home" className="flex items-center gap-2 group">
+            <div className="h-9 w-9 rounded-lg bg-brand-700 flex items-center justify-center">
+              <BrandMark className="h-5 w-5 text-white" />
+            </div>
+            <span className="font-heading font-extrabold text-lg tracking-tight text-slate-900">CloseLoop</span>
+          </Link>
+          <Link to="/" data-testid="back-to-closeloop-link" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors duration-200">
+            <ArrowLeft className="h-4 w-4" /> Back to CloseLoop
+          </Link>
         </div>
 
         <div className="max-w-md mx-auto w-full">
