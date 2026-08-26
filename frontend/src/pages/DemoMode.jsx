@@ -25,7 +25,7 @@ function TL({ children, done, active }) {
   return (
     <div className="flex gap-3 animate-fade-up">
       <div className="flex flex-col items-center">
-        <div className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 ${done ? "bg-emerald-100 text-emerald-700" : active ? "bg-orange-100 text-orange-700" : "bg-slate-100 text-slate-500"}`}>
+        <div className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 ${done ? "bg-teal-100 text-teal-700" : active ? "bg-red-100 text-red-700" : "bg-slate-100 text-slate-500"}`}>
           {done ? <Check className="h-4 w-4" /> : active ? <RotateCcw className="h-4 w-4" /> : <span className="h-2 w-2 rounded-full bg-current" />}
         </div>
         <div className="w-px flex-1 bg-slate-200 my-1" />
@@ -54,7 +54,7 @@ export default function DemoMode() {
       {/* Top control bar */}
       <div className="sticky top-0 z-10 backdrop-blur-xl bg-white/85 border-b border-slate-200/70 px-6 h-14 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-slate-900 flex items-center justify-center"><BrandMark className="h-4.5 w-4.5 text-white" /></div>
+          <div className="h-8 w-8 rounded-lg bg-brand-700 flex items-center justify-center"><BrandMark className="h-5 w-5 text-white" /></div>
           <span className="font-heading font-extrabold tracking-tight text-slate-900">CloseLoop</span>
           <span data-testid="demo-badge" className="ml-2 text-[10px] font-bold uppercase tracking-widest text-amber-700 bg-amber-100 border border-amber-200 rounded-full px-2 py-0.5">Demo Environment</span>
         </div>
@@ -62,21 +62,34 @@ export default function DemoMode() {
           <button data-testid="demo-jump-act3" onClick={() => setAct(3)} className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-orange-200 text-orange-700 px-3 py-1.5 text-xs font-semibold hover:bg-orange-50 transition-colors duration-200">Jump to reopen moment</button>
           <button data-testid="demo-autoplay" onClick={() => setAuto((v) => !v)} className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors duration-200 ${auto ? "bg-emerald-600 text-white" : "border border-slate-200 text-slate-600 hover:bg-slate-100"}`}>{auto ? "Auto-play: On" : "Auto-play"}</button>
           <button data-testid="demo-restart" onClick={() => setAct(0)} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors duration-200"><RefreshCw className="h-3.5 w-3.5" /> Restart Demo</button>
-          <button data-testid="demo-exit" onClick={() => navigate("/staff")} className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 text-xs font-semibold transition-colors duration-200"><X className="h-3.5 w-3.5" /> Exit Demo</button>
+          <button data-testid="demo-exit" onClick={() => navigate("/staff")} className="inline-flex items-center gap-1.5 rounded-full bg-brand-700 hover:bg-brand-800 text-white px-3 py-1.5 text-xs font-semibold transition-colors duration-200"><X className="h-3.5 w-3.5" /> Exit Demo</button>
         </div>
       </div>
 
       <div className="max-w-3xl mx-auto px-6 py-10">
-        {/* progress dots */}
-        <div className="flex gap-1.5 mb-8">
-          {[0, 1, 2, 3, 4, 5].map((i) => <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i <= act ? "w-8 bg-slate-900" : "w-4 bg-slate-200"}`} />)}
+        {/* Workflow step indicator */}
+        <div className="flex items-center gap-1 sm:gap-2 mb-8 overflow-x-auto">
+          {[["01", "Inbox"], ["02", "Triage"], ["03", "Resolution"], ["04", "Memory"], ["05", "Dashboard"]].map(([n, l], idx) => {
+            const step = idx + 1;
+            const state = act > step ? "done" : act === step ? "active" : "todo";
+            return (
+              <React.Fragment key={n}>
+                <button onClick={() => setAct(step)} data-testid={`demo-step-${step}`}
+                  className={`flex items-center gap-2 rounded-full px-2.5 py-1.5 text-xs font-semibold transition-colors duration-200 shrink-0 ${state === "active" ? "bg-brand-700 text-white" : state === "done" ? "bg-brand-50 text-brand-700" : "text-slate-400 hover:text-slate-600"}`}>
+                  <span className={`inline-flex items-center justify-center h-5 w-5 rounded-full text-[10px] ${state === "active" ? "bg-white/20 text-white" : state === "done" ? "bg-brand-100 text-brand-700" : "bg-slate-100 text-slate-400"}`}>{state === "done" ? <Check className="h-3 w-3" /> : n}</span>
+                  <span className="hidden sm:inline">{l}</span>
+                </button>
+                {idx < 4 && <span className={`h-px w-3 sm:w-6 shrink-0 ${act > step ? "bg-brand-300" : "bg-slate-200"}`} />}
+              </React.Fragment>
+            );
+          })}
         </div>
 
         {act === 0 && (
           <div className="animate-fade-up text-center py-10">
             <h1 className="font-heading text-4xl font-extrabold tracking-tight text-slate-900">See CloseLoop in 2 minutes</h1>
             <p className="mt-3 text-slate-600 max-w-md mx-auto">Watch a batch of resident messages arrive, get sorted automatically, and see what happens when a fixed problem comes back.</p>
-            <button data-testid="run-demo-inbox" onClick={next} className="mt-8 inline-flex items-center gap-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-semibold px-6 py-3 transition-colors duration-200">Run Demo Inbox <ArrowRight className="h-4 w-4" /></button>
+            <button data-testid="run-demo-inbox" onClick={next} className="mt-8 inline-flex items-center gap-2 rounded-full bg-brand-700 hover:bg-brand-800 text-white font-semibold px-6 py-3 transition-colors duration-200">Run Demo Inbox <ArrowRight className="h-4 w-4" /></button>
           </div>
         )}
 
@@ -90,7 +103,7 @@ export default function DemoMode() {
               ))}
               <p className="text-sm text-slate-400 pt-1">…and 18 more</p>
             </div>
-            <button onClick={next} className="mt-8 inline-flex items-center gap-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-semibold px-6 py-3">Sort the work <ArrowRight className="h-4 w-4" /></button>
+            <button onClick={next} className="mt-8 inline-flex items-center gap-2 rounded-full bg-brand-700 hover:bg-brand-800 text-white font-semibold px-6 py-3">Sort the work <ArrowRight className="h-4 w-4" /></button>
           </div>
         )}
 
@@ -114,7 +127,7 @@ export default function DemoMode() {
             </div>
             <p className="mt-5 font-heading text-lg font-bold text-slate-900">CloseLoop handled the routine. Here's what needs you.</p>
             <p className="text-sm text-slate-500">Management doesn't need to read every resident message.</p>
-            <button onClick={next} className="mt-6 inline-flex items-center gap-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-semibold px-6 py-3">The important part <ArrowRight className="h-4 w-4" /></button>
+            <button onClick={next} className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand-700 hover:bg-brand-800 text-white font-semibold px-6 py-3">The important part <ArrowRight className="h-4 w-4" /></button>
           </div>
         )}
 
@@ -130,15 +143,15 @@ export default function DemoMode() {
               <TL active>New message: "The sink you fixed is leaking again."</TL>
             </div>
             <div className="mt-3 rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-600">CloseLoop recognizes this is the <span className="font-semibold text-slate-800">same underlying issue</span> — no new ticket created. It reopens the existing one.</div>
-            <div data-testid="demo-failed" className="mt-4 rounded-xl border-2 border-orange-300 bg-orange-50 p-5">
-              <p className="text-sm font-bold text-orange-800 flex items-center gap-2"><ShieldAlert className="h-4 w-4" /> PREVIOUS RESOLUTION FAILED</p>
-              <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm text-orange-900">
+            <div data-testid="demo-failed" className="mt-4 rounded-xl border border-red-200 bg-red-50 p-5">
+              <p className="text-sm font-bold text-red-700 flex items-center gap-2"><ShieldAlert className="h-4 w-4" /> PREVIOUS RESOLUTION FAILED</p>
+              <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm text-red-700">
                 <div>Same issue reopened</div><div>Repeat problem detected</div>
                 <div>Resolution attempts: <span className="font-semibold">1</span></div><div>Human Attention: <span className="font-semibold">96/100</span></div>
               </div>
-              <p className="mt-2 text-sm font-semibold text-orange-800">Management review recommended.</p>
+              <p className="mt-2 text-sm font-semibold text-red-700">Management review recommended.</p>
             </div>
-            <button onClick={next} className="mt-6 inline-flex items-center gap-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-semibold px-6 py-3">Why this matters <ArrowRight className="h-4 w-4" /></button>
+            <button onClick={next} className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand-700 hover:bg-brand-800 text-white font-semibold px-6 py-3">Why this matters <ArrowRight className="h-4 w-4" /></button>
           </div>
         )}
 
@@ -150,7 +163,7 @@ export default function DemoMode() {
               <p className="text-sm text-slate-500">Traditional systems track whether a <span className="font-semibold text-slate-700">ticket was closed</span>.</p>
               <p className="mt-2 text-base font-semibold text-slate-900">CloseLoop tracks whether the resident's problem was actually resolved.</p>
             </div>
-            <button onClick={next} className="mt-8 inline-flex items-center gap-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-semibold px-6 py-3">See it in the live dashboard <ArrowRight className="h-4 w-4" /></button>
+            <button onClick={next} className="mt-8 inline-flex items-center gap-2 rounded-full bg-brand-700 hover:bg-brand-800 text-white font-semibold px-6 py-3">See it in the live dashboard <ArrowRight className="h-4 w-4" /></button>
           </div>
         )}
 
@@ -164,7 +177,7 @@ export default function DemoMode() {
               <Metric label="Needs Attention" value="3" accent="text-amber-600" />
               <Metric label="Resolution Failures" value="3" accent="text-orange-600" />
             </div>
-            <button data-testid="demo-enter-live" onClick={() => navigate("/staff")} className="mt-8 inline-flex items-center gap-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-semibold px-6 py-3">Enter the live dashboard <ArrowRight className="h-4 w-4" /></button>
+            <button data-testid="demo-enter-live" onClick={() => navigate("/staff")} className="mt-8 inline-flex items-center gap-2 rounded-full bg-brand-700 hover:bg-brand-800 text-white font-semibold px-6 py-3">Enter the live dashboard <ArrowRight className="h-4 w-4" /></button>
             <p className="mt-3 text-sm text-slate-500">The reopened Unit 603 sink is the top card in <button onClick={() => navigate("/staff")} className="font-semibold text-slate-800 underline">Needs Your Attention</button> — inspect the real record.</p>
           </div>
         )}

@@ -90,6 +90,9 @@ Phase 1 (skeleton, NO AI): MVP web app for multifamily property management. Resi
 - Centralized a restrained enterprise badge system in constants.js (neutral badges + tiny semantic accents): LANE badges neutral with a small dot (teal/blue/amber), PRIORITY/STATUS neutral with P0/Reopened accents, one analytical score pill (severity via text color only, no gamified tiles). Propagates across all issue tables + IssueDetailSheet.
 - StaffDashboard: removed full-row pink/amber tints (white rows, subtle hover; extremely subtle tint only for critical), white Needs-Attention cards with 2px severity edge, Run Demo button → CloseLoop blue, Business Impact numbers → navy (teal/red only where meaningful), metrics-row icons de-rainbowed, shared-incident banner recolored from purple → CloseLoop blue. ~85-90% neutral, blue-led. Verified: Overview + All Issues render clean, no runtime errors.
 
+## Demo experience polish (2026-06)
+- DemoMode: replaced anonymous progress dots with a numbered workflow step indicator (01 Inbox → 05 Dashboard, clickable, labels collapse on mobile); aligned the shell to CloseLoop blue (logo + primary/exit buttons); applied teal/red semantic palette to the Resolution Memory timeline and softened the failed-resolution panel from saturated orange to pale red. Icons remain lucide SVG (no emoji). Demo logic/sequence unchanged.
+
 ## Next Tasks
 - Optional: move lead rate-limit counter to a shared/Mongo TTL store (survives restarts, multi-worker).
 - Optional: split server.py (1686 lines) into routers.
