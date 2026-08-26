@@ -16,7 +16,8 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/comp
 function Pill({ meta, testid }) {
   if (!meta) return <span className="text-slate-400 text-sm">—</span>;
   return (
-    <span data-testid={testid} className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${meta.cls}`}>
+    <span data-testid={testid} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${meta.cls}`}>
+      {meta.dot && <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />}
       {meta.label}
     </span>
   );
@@ -132,11 +133,11 @@ function ImpactStrip({ impact }) {
           </div>
         </div>
         <div className="grid grid-cols-2 gap-y-4 sm:flex sm:items-stretch sm:divide-x sm:divide-slate-200">
-          <ImpactMetric testid="impact-automation" value={impact.automation_rate} suffix="%" label="Handled without management" accent="text-emerald-600" />
+          <ImpactMetric testid="impact-automation" value={impact.automation_rate} suffix="%" label="Handled without management" accent="text-slate-900" />
           <ImpactMetric testid="impact-time-saved" value={impact.hours_saved} suffix="h" decimals={1} label="Estimated time saved" tip={timeSavedTip} />
-          <ImpactMetric testid="impact-confirmed" value={impact.resident_confirmed_rate} suffix="%" label="Resident-confirmed resolution" accent="text-emerald-600" />
-          <ImpactMetric testid="impact-repeat" value={impact.repeat_complaints} label="Repeat issues detected" accent="text-amber-600" />
-          <ImpactMetric testid="impact-failed" value={impact.failed_resolutions} label="Failed resolutions surfaced" accent="text-red-600" />
+          <ImpactMetric testid="impact-confirmed" value={impact.resident_confirmed_rate} suffix="%" label="Resident-confirmed resolution" accent="text-teal-600" />
+          <ImpactMetric testid="impact-repeat" value={impact.repeat_complaints} label="Repeat issues detected" accent="text-slate-900" />
+          <ImpactMetric testid="impact-failed" value={impact.failed_resolutions} label="Failed resolutions surfaced" accent="text-red-700" />
         </div>
       </div>
     </TooltipProvider>
@@ -160,9 +161,9 @@ function MetricsRow({ stats }) {
   return (
     <div data-testid="metrics-row" className="rounded-xl border border-slate-200 bg-white px-5 py-3.5 flex flex-wrap items-center gap-y-3 divide-x divide-slate-200">
       <Metric Icon={MessageSquare} value={stats.resident_interactions_today} label="Interactions" />
-      <Metric Icon={Sparkles} value={stats.handled_automatically} label="AI Resolved" accent="text-emerald-600" />
-      <Metric Icon={Wrench} value={stats.actions_created} label="Actions" accent="text-brand-600" />
-      <Metric Icon={Scale} value={stats.human_reviews} label="Reviews" accent="text-amber-600" />
+      <Metric Icon={Sparkles} value={stats.handled_automatically} label="AI Resolved" accent="text-teal-600" />
+      <Metric Icon={Wrench} value={stats.actions_created} label="Actions" accent="text-brand-700" />
+      <Metric Icon={Scale} value={stats.human_reviews} label="Reviews" accent="text-slate-500" />
       <Metric Icon={RotateCcw} value={stats.failed_resolutions} label="Failed" accent="text-red-600" />
       <Metric Icon={Clock} value={fmtDuration(stats.median_first_response_seconds)} label="Median Response" />
     </div>
@@ -180,9 +181,9 @@ function rank(i) {
 
 // Semantic left-accent so P0 / failed / reopened stand out without over-coloring.
 function cardAccent(i) {
-  if (i.is_emergency || i.failed_resolution) return "border-l-4 border-l-red-500 bg-red-50/60 hover:bg-red-50";
-  if (i.status === "reopened") return "border-l-4 border-l-amber-500 bg-amber-50/50 hover:bg-amber-50";
-  return "border-l-4 border-l-transparent bg-white hover:bg-slate-50";
+  if (i.is_emergency || i.failed_resolution) return "border-l-2 border-l-red-500 bg-white hover:bg-slate-50";
+  if (i.status === "reopened") return "border-l-2 border-l-amber-500 bg-white hover:bg-slate-50";
+  return "border-l-2 border-l-transparent bg-white hover:bg-slate-50";
 }
 
 export default function StaffDashboard() {
@@ -270,7 +271,7 @@ export default function StaffDashboard() {
         <RotateCcw className={`h-4 w-4 ${resetting ? "animate-spin" : ""}`} /> {resetting ? "Resetting…" : "Reset Demo Data"}
       </button>
       <a href="/staff/demo" data-testid="run-demo-btn"
-        className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 hover:bg-amber-600 text-white px-3.5 py-2 text-sm font-semibold transition-colors duration-200">
+        className="inline-flex items-center gap-1.5 rounded-full bg-brand-700 hover:bg-brand-800 text-white px-3.5 py-2 text-sm font-semibold transition-colors duration-200">
         ▶ Run Demo
       </a>
       <button data-testid="refresh-btn" onClick={load}
@@ -286,11 +287,11 @@ export default function StaffDashboard() {
         {tab === "Overview" && <p className="text-slate-500 -mt-2">CloseLoop handled the routine. Here's what needs you.</p>}
         {/* Shared incident */}
         {tab === "Overview" && incidents.length > 0 && incidents.map((inc, idx) => (
-          <div key={idx} data-testid="shared-incident-banner" className="rounded-xl border-l-4 border-l-violet-500 border border-violet-200 bg-violet-50 p-4 flex items-start gap-3">
-            <Layers className="h-5 w-5 text-violet-600 shrink-0 mt-0.5" />
+          <div key={idx} data-testid="shared-incident-banner" className="rounded-xl border-l-2 border-l-brand-700 border border-slate-200 bg-brand-50 p-4 flex items-start gap-3">
+            <Layers className="h-5 w-5 text-brand-700 shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-bold text-violet-800 uppercase tracking-wide">Possible Shared Incident — {inc.category}</p>
-              <p className="text-sm text-violet-700 mt-0.5">{inc.count} related reports from {inc.resident_count} residents (units {inc.units.slice(0, 6).join(", ")}) within a {inc.window_minutes}-minute window.</p>
+              <p className="text-sm font-bold text-slate-900 uppercase tracking-wide">Possible Shared Incident — {inc.category}</p>
+              <p className="text-sm text-slate-600 mt-0.5">{inc.count} related reports from {inc.resident_count} residents (units {inc.units.slice(0, 6).join(", ")}) within a {inc.window_minutes}-minute window.</p>
             </div>
           </div>
         ))}
@@ -362,7 +363,7 @@ export default function StaffDashboard() {
                 ) : (
                   tabFiltered.map((i) => (
                     <TableRow key={i.id} data-testid={`issue-row-${i.id}`} onClick={() => openIssue(i.id)}
-                      className={`cursor-pointer border-slate-100 transition-colors duration-200 ${i.is_emergency || i.failed_resolution ? "bg-red-50 hover:bg-red-100" : i.status === "reopened" ? "bg-amber-50 hover:bg-amber-100" : "hover:bg-slate-50"}`}>
+                      className={`cursor-pointer border-slate-100 transition-colors duration-150 ${i.is_emergency || i.failed_resolution ? "bg-red-50/40 hover:bg-red-50" : "hover:bg-slate-50"}`}>
                       <TableCell><span data-testid={`row-score-${i.id}`} className={`inline-flex items-center justify-center h-7 w-9 rounded-md font-heading font-bold text-xs ${attentionCls(i.human_attention_score || 0)}`}>{i.human_attention_score ?? 0}</span></TableCell>
                       <TableCell className="font-mono font-semibold text-slate-900">
                         <div className="flex items-center gap-1.5">

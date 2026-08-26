@@ -86,6 +86,10 @@ Phase 1 (skeleton, NO AI): MVP web app for multifamily property management. Resi
 - Fixed iteration_10 items: navigate hook scope, mobile nav/signout gap, header wrap, clipped chart Y-axis, sub-view titles use sidebar labels, shared-incident scoped to Overview, duplicate tracking class.
 - QA: iteration_10 frontend 95% pass (staff redesign) + visual verification of public polish (no runtime errors). Mobile drawer verified present in DOM (screenshot tool forces desktop width so drawer open not captured).
 
+## Staff dashboard visual-system cleanup (2026-06)
+- Centralized a restrained enterprise badge system in constants.js (neutral badges + tiny semantic accents): LANE badges neutral with a small dot (teal/blue/amber), PRIORITY/STATUS neutral with P0/Reopened accents, one analytical score pill (severity via text color only, no gamified tiles). Propagates across all issue tables + IssueDetailSheet.
+- StaffDashboard: removed full-row pink/amber tints (white rows, subtle hover; extremely subtle tint only for critical), white Needs-Attention cards with 2px severity edge, Run Demo button → CloseLoop blue, Business Impact numbers → navy (teal/red only where meaningful), metrics-row icons de-rainbowed, shared-incident banner recolored from purple → CloseLoop blue. ~85-90% neutral, blue-led. Verified: Overview + All Issues render clean, no runtime errors.
+
 ## Next Tasks
 - Optional: move lead rate-limit counter to a shared/Mongo TTL store (survives restarts, multi-worker).
 - Optional: split server.py (1686 lines) into routers.
