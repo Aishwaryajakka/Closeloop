@@ -1,0 +1,72 @@
+{
+  "summary": "Step 13 verification of the 3 new features + demo seed. Created /app/backend/tests/test_step13.py (20 pytest cases, 17 PASS / 3 intentional defect-documenting FAILs, ~8s, no AI needed) and ran 3 Playwright passes against the public URL. VERIFIED WORKING: (A) Resident Chat Thread — POST /api/residents/thread returns issue + 8 chronologically-sorted interactions for Nathan Brooks/603, 404 for wrong resident and for unknown issue_id; resident portal My Requests shows 1 card with 'Reopened' badge + reopened banner, toggle-thread-{id} flips label View/Hide conversation and renders thread-{id} with 8 bubbles, resident msgs right-aligned (justify-end, dark), system/staff/ai left-aligned with distinct colours, hides again on second click, 0 error nodes. (B) Trend Insights — GET /api/insights returns total_repeat=3, by_category [complaint 1, noise 1, maintenance 1], by_unit [451,412,603], weekly [2026-W34:1, 2026-W35:2]; sums match total; 401 without auth; nav-insights routes to /staff/insights and insight-total/insight-categories/insight-units/insight-weekly all render with real bars. (C) Answer Approval — POST /api/issues/{id}/approve-answer posts the answer as an 'ai' interaction + a system 'Suggested answer approved and sent by ...' note, sets lane=RESOLVE/status=resolved/resolved_at/auto_response, clears suggested_response, no _id leak; persisted on GET /api/issues/{id}; empty/whitespace answer -> 400, unknown id -> 404, unauthenticated -> 401. UI: suggested-response card pre-fills approve-answer-input, edited text is accepted, approve-answer-btn shows 'Answer approved and sent to the resident.' toast and the sheet re-renders as Resolved with the edited answer in AUTO-RESOLVED FROM DOCUMENTS. SEED: /api/dashboard = total 20, handled 5, actions 5, reviews 10, failed 3, confirmed 100%, median 120s; 20 issues across RESOLVE/ACTION/REVIEW with populated AI fields + human_attention_score; Unit 603 = reopened/REVIEW/attempts 1/failed_resolution true/score 96/6-field review_summary/repeat_complaint; Unit 412 = REVIEW noise, contact_count 3, review brief; /api/incidents/detect returns exactly one incident, 4 residents, units 701-704. REGRESSION: dashboard tab filters via testids REVIEW 10 / ACTION 5 / AI Resolved 5 / Failed Resolutions 3 / All Issues 20, search '603' -> 1 row, score column intact, unit-603 sheet renders review-outcome + failed-resolution-banner + repeat-complaint-banner + attention-score, shared-incident banner correct, Property Knowledge lists 4 ready docs. DB restored to exactly 20 issues / 45 interactions / 4 docs, 0 TEST leftovers.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "POST /api/issues/{id}/approve-answer",
+        "issue": "No guard on lane / suggested_response. Reproduced: cloned an open ACTION maintenance ticket (no suggested_response) and POSTed {answer:'probe'} -> 200 with lane=RESOLVE, status=resolved, assigned_team=null. Staff (or any bug/mis-click) can close an open work order with an arbitrary 'approved answer'. Should 400 unless issue.lane=='REVIEW' and issue.suggested_response is set. Same class as the iteration_6 HIGH defect. Test: test_step13.py::test_approve_answer_rejects_non_review_issue",
+        "priority": "HIGH"
+      },
+      {
+        "endpoint": "seed_demo.py / GET /api/issues",
+        "issue": "DEMO GAP: not a single seeded issue has suggested_response (all 20 have suggested_response=null), so the Answer Approval feature (approve-answer-input / approve-answer-btn card) NEVER renders anywhere in the seeded demo — the feature is undemoable without hand-editing the DB (I had to clone an issue in Mongo to exercise it). Seed at least one REVIEW issue (e.g. the Unit 337 parking policy-conflict or a FAQ-style question) with a suggested_response. Test: test_step13.py::test_seed_has_review_issue_with_suggested_response",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": [
+      {
+        "endpoint": "seed_demo.py (Unit 603 storyline interaction timestamps)",
+        "issue": "Thread order is illogical: interactions come back as [resident report, system ack, staff 'Plumber replaced the drain seal', resident '\u2713 Confirmed resolved', ai 'Is everything working now? Please confirm', system 'Marked complete \u2014 awaiting resident confirmation', resident 'leaking again', system 'Previous resolution failed']. The resident's confirmation (idx 3) is timestamped BEFORE the confirmation prompt (idx 4) and before 'Marked complete' (idx 5), so in the resident chat the confirmation appears to answer a question that has not been asked yet. Expected per the storyline: repair -> marked complete -> confirmation prompt -> resident confirmed. Test: test_step13.py::test_unit603_thread_chronology_is_logical"
+      },
+      {
+        "endpoint": "GET /api/incidents/detect",
+        "issue": "Cluster keyword is unstable/generic for the water outage: two identical calls returned keyword 'water' and then keyword 'coming' for the same 701-704 cluster (tie-break on token counts, 'coming' from \"no water coming out of any tap\"). resident_count/units are correct, but any UI that surfaces the keyword can show 'coming'. Carries over the iteration_6 recommendation to score keywords from entities / domain nouns."
+      },
+      {
+        "endpoint": "POST /api/issues/{id}/approve-answer (stale REVIEW state)",
+        "issue": "After approving an answer on the Unit 337 policy-conflict issue, the issue is RESOLVE/resolved but policy_conflict stays true and human_attention_score stays 60, so the detail sheet still shows the red 'REVIEW \u2014 POLICY CONFLICT' banner and HUMAN ATTENTION SCORE 60 next to the resolved answer. finalize_attention() should zero/降 the score for resolved issues and the conflict banner should be suppressed once resolved."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Staff issue detail Sheet (after Approve & Send)",
+        "issues": ["Resolved issue still displays 'REVIEW \u2014 POLICY CONFLICT' banner and attention score 60 alongside the approved answer \u2014 contradictory state."]
+      },
+      {
+        "screen": "Resident portal My Requests \u2192 conversation (Unit 603)",
+        "issues": ["Confirmation bubble '\u2713 Confirmed resolved' renders above the 'Is everything working now?' prompt (seed timestamp ordering) \u2014 reads backwards in the demo."]
+      },
+      {
+        "screen": "Staff dashboard",
+        "issues": ["Stat-card label 'Failed Resolutions' duplicates the filter-tab label; text-based selection/clicking is ambiguous (testids exist, so tests are fine, but consider distinct wording)."]
+      }
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_step13.py", "/app/test_reports/pytest/step13.xml"],
+  "action_items": [
+    "HIGH: guard approve-answer \u2014 400 unless lane=='REVIEW' and suggested_response is present; do not clear assigned_team on ACTION tickets.",
+    "HIGH: seed at least one REVIEW issue with a suggested_response so the Answer Approval feature is visible in the demo (currently 0/20).",
+    "MEDIUM: fix Unit 603 seed interaction timestamps so the confirmation prompt + 'marked complete' precede the resident's '\u2713 Confirmed resolved' reply.",
+    "LOW: suppress policy-conflict/review banners and lower human_attention_score once an issue is resolved via approve-answer.",
+    "LOW: stabilise incident keyword selection (entities/domain nouns) \u2014 'coming' vs 'water' for the 701-704 cluster."
+  ],
+  "critical_code_review_comments": [
+    "approve_answer() (server.py:1276) trusts any issue id and any answer string; add lane/suggested_response validation and keep assigned_team when the underlying work order is still open.",
+    "GET /api/insights loads every issue into Python (find({}).to_list(5000)) and Counters in-process; move to a $match/$group aggregation and cap the response, otherwise it degrades linearly with issue volume.",
+    "/api/residents/thread does resident lookup by (name, unit) plaintext \u2014 any resident's full conversation is readable by anyone who knows a neighbour's name+unit. Acceptable for a demo, but flag as a privacy TODO (token/magic-link per request).",
+    "server.py is now 1483 lines (triage, auth, documents, dashboard, incidents, insights, thread, approvals) \u2014 split into routers/services; both new endpoints were appended below the document handlers, so route grouping is already inconsistent.",
+    "Insights 'weekly' buckets use the issue created_at, not the repeat/failure date, so a repeat detected this week still lands in the week the issue was first opened \u2014 the 'week over week' framing in the UI copy is misleading."
+  ],
+  "updated_files": ["/app/backend/tests/test_step13.py"],
+  "success_rate": {"backend": "85% (17/20 cases; 3 failures are the 2 HIGH defects + the seed chronology defect)", "frontend": "100% of asserted elements rendered and integrated (thread, insights, approve-answer, tabs, sheet, knowledge)"},
+  "seed_data_creation": "Temporarily cloned 2 issues in Mongo (TEST_approve_issue with a suggested_response for the approval flow/UI, TEST_action_probe for the guard probe). Both plus their interactions deleted; DB verified back at exactly 20 issues / 45 interactions / 4 documents, 0 TEST leftovers. seed_demo.py was NOT re-run.",
+  "should_call_test_agent_after_fix": true,
+  "should_main_agent_self_test": false,
+  "test_credentials": "Bearer test_session_step2_demo / cookie session_token=test_session_step2_demo (user test-user-step2 / aishwaryajakka@hotmail.com), db test_database. Resident: Nathan Brooks / 603.",
+  "context_for_next_testing_agent": "Run `cd /app/backend && python -m pytest tests/test_step13.py -n 0 -q` (~8s, no AI). Expected today: 17 pass / 3 fail, where the 3 failures are DEFECT markers (seed has no suggested_response; approve-answer accepts non-REVIEW issues; Unit 603 thread chronology). After the main agent's fixes those 3 should turn green. The fixtures clone issues into Mongo with ids TEST_approve_issue / TEST_action_probe and delete them in teardown \u2014 if a run is interrupted, delete ids matching ^TEST from issues/interactions and re-assert 20 issues / 45 interactions. Frontend: add cookie session_token then goto /staff; use testids tab-review/tab-action/tab-ai-resolved/tab-failed-resolutions/tab-all-issues (the text 'Failed Resolutions' also matches a stat card), nav-insights, resident-name-input/resident-unit-input/track-requests-btn/toggle-thread-{id}/thread-{id}, approve-answer-input/approve-answer-btn. The approve-answer UI can only be exercised after seeding a suggested_response.",
+  "rca_of_the_issue": "approve_answer() in server.py only checks existence of the issue and non-empty answer, then unconditionally writes lane=RESOLVE/status=resolved/assigned_team=None \u2014 so it doubles as an 'unconditional close' endpoint for ACTION tickets. Separately, seed_demo.py builds REVIEW issues with review_summary but never sets suggested_response, and IssueDetailSheet only renders the approval card when issue.suggested_response is truthy (line 284), which is why the feature is invisible on seeded data. The Unit 603 chronology issue is purely seed-side: the interaction created_at offsets place the resident confirmation earlier than the ai prompt/system completion notes, and both API and UI sort strictly by created_at."
+}

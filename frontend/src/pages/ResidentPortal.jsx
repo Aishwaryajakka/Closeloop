@@ -26,6 +26,8 @@ export default function ResidentPortal() {
   const [tab, setTab] = useState("new"); // new | track
   const [requests, setRequests] = useState([]);
   const [tracked, setTracked] = useState(false);
+  const [openThread, setOpenThread] = useState(null);
+  const [thread, setThread] = useState([]);
 
   useEffect(() => {
     api.get("/config").then((r) => setConfig(r.data)).catch(() => {});
@@ -62,6 +64,18 @@ export default function ResidentPortal() {
       setTracked(true);
     } catch (e) {
       setRequests([]);
+    }
+  };
+
+  const toggleThread = async (issueId) => {
+    if (openThread === issueId) { setOpenThread(null); return; }
+    setOpenThread(issueId);
+    setThread([]);
+    try {
+      const r = await api.post("/residents/thread", { name: name.trim(), unit: unit.trim(), issue_id: issueId });
+      setThread(r.data.interactions || []);
+    } catch (e) {
+      toast.error("Could not load the conversation.");
     }
   };
 
@@ -259,6 +273,27 @@ export default function ResidentPortal() {
                       )}
                       {req.status === "reopened" && (
                         <p data-testid={`resident-reopened-${req.id}`} className="mt-2 text-sm text-orange-700 font-medium">We've reopened your request — a specialist will follow up here shortly.</p>
+                      )}
+                      <button data-testid={`toggle-thread-${req.id}`} onClick={() => toggleThread(req.id)}
+                        className="mt-2 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors duration-200">
+                        {openThread === req.id ? "Hide conversation" : "View conversation"}
+                      </button>
+                      {openThread === req.id && (
+                        <div data-testid={`thread-${req.id}`} className="mt-2 space-y-2 border-t border-slate-100 pt-3">
+                          {thread.length === 0 ? (
+                            <p className="text-xs text-slate-400">Loading…</p>
+                          ) : thread.map((m) => {
+                            const mine = m.sender === "resident";
+                            return (
+                              <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                                <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${mine ? "bg-slate-900 text-white" : m.sender === "ai" ? "bg-emerald-100 text-emerald-900" : m.sender === "system" ? "bg-slate-100 text-slate-500 italic" : "bg-blue-100 text-blue-900"}`}>
+                                  {!mine && <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 mb-0.5">{m.sender === "ai" ? "Assistant" : m.sender}</p>}
+                                  {m.message}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       )}
                       <p className="mt-2 text-xs text-slate-400">{fmtDate(req.created_at)}</p>
                     </div>

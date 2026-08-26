@@ -63,6 +63,8 @@ export default function IssueDetailSheet({ issueId, open, onOpenChange, onUpdate
   const [loading, setLoading] = useState(false);
   const [reply, setReply] = useState("");
   const [config, setConfig] = useState(null);
+  const [draftAnswer, setDraftAnswer] = useState("");
+  const [approving, setApproving] = useState(false);
 
   useEffect(() => {
     api.get("/config").then((r) => setConfig(r.data)).catch(() => {});
@@ -74,6 +76,7 @@ export default function IssueDetailSheet({ issueId, open, onOpenChange, onUpdate
     try {
       const r = await api.get(`/issues/${issueId}`);
       setIssue(r.data);
+      setDraftAnswer(r.data.suggested_response || "");
     } catch (e) {
       toast.error("Failed to load issue.");
     } finally {
@@ -95,6 +98,21 @@ export default function IssueDetailSheet({ issueId, open, onOpenChange, onUpdate
       onUpdated && onUpdated();
     } catch (e) {
       toast.error("Update failed.");
+    }
+  };
+
+  const approveAnswer = async () => {
+    if (!draftAnswer.trim()) { toast.error("Answer cannot be empty."); return; }
+    setApproving(true);
+    try {
+      await api.post(`/issues/${issueId}/approve-answer`, { answer: draftAnswer.trim() });
+      toast.success("Answer approved and sent to the resident.");
+      await load();
+      onUpdated && onUpdated();
+    } catch (e) {
+      toast.error("Could not send the answer.");
+    } finally {
+      setApproving(false);
     }
   };
 
@@ -265,9 +283,14 @@ export default function IssueDetailSheet({ issueId, open, onOpenChange, onUpdate
               {/* Suggested response (needs approval) */}
               {issue.suggested_response && (
                 <div data-testid="suggested-response" className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-4">
-                  <p className="text-xs font-bold uppercase tracking-widest text-indigo-700 mb-1">Suggested Response — needs staff approval</p>
-                  <p className="text-sm text-slate-800">{issue.suggested_response}</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-indigo-700 mb-2">Suggested Response — review, edit &amp; approve</p>
+                  <textarea data-testid="approve-answer-input" value={draftAnswer} onChange={(e) => setDraftAnswer(e.target.value)} rows={3}
+                    className="w-full rounded-lg border border-indigo-200 px-3 py-2 text-sm text-slate-800 bg-white resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1" />
                   {issue.answer_source && <p className="text-xs text-indigo-700 mt-1.5">Source: {issue.answer_source}{issue.answer_confidence ? ` · confidence ${issue.answer_confidence}` : ""}</p>}
+                  <button data-testid="approve-answer-btn" onClick={approveAnswer} disabled={approving}
+                    className="mt-2.5 inline-flex items-center gap-2 rounded-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 transition-colors duration-200">
+                    <CheckCircle2 className="h-4 w-4" /> {approving ? "Sending…" : "Approve & Send to Resident"}
+                  </button>
                 </div>
               )}
 

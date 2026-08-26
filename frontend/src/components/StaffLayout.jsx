@@ -1,11 +1,12 @@
 import React from "react";
-import { Building2, LogOut, Inbox, BookOpen } from "lucide-react";
+import { Building2, LogOut, Inbox, BookOpen, TrendingUp } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 
 const NAV = [
   { to: "/staff", label: "All Issues", icon: Inbox, testid: "nav-issues" },
   { to: "/staff/knowledge", label: "Property Knowledge", icon: BookOpen, testid: "nav-knowledge" },
+  { to: "/staff/insights", label: "Trend Insights", icon: TrendingUp, testid: "nav-insights" },
 ];
 
 export default function StaffLayout({ title, headerAction, children }) {

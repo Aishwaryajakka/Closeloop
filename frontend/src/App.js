@@ -7,6 +7,7 @@ import ResidentPortal from "@/pages/ResidentPortal";
 import StaffLogin from "@/pages/StaffLogin";
 import StaffDashboard from "@/pages/StaffDashboard";
 import PropertyKnowledge from "@/pages/PropertyKnowledge";
+import TrendInsights from "@/pages/TrendInsights";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -44,6 +45,14 @@ function AppRouter() {
         element={
           <ProtectedRoute>
             <PropertyKnowledge />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/staff/insights"
+        element={
+          <ProtectedRoute>
+            <TrendInsights />
           </ProtectedRoute>
         }
       />

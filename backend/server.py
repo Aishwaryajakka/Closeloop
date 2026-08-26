@@ -1246,6 +1246,83 @@ async def merge_incident(payload: MergePayload, user=Depends(get_current_user)):
     return {"id": incident_id, "issue_ids": payload.issue_ids}
 
 
+# ------------------- Resident chat thread -------------------
+class ThreadLookup(BaseModel):
+    name: str
+    unit: str
+    issue_id: str
+
+
+@api_router.post("/residents/thread")
+async def resident_thread(payload: ThreadLookup):
+    prop = await db.properties.find_one({}, {"_id": 0})
+    resident = await db.residents.find_one(
+        {"name": payload.name, "unit": payload.unit, "property_id": prop["id"] if prop else None}, {"_id": 0}
+    )
+    if not resident:
+        raise HTTPException(status_code=404, detail="Resident not found")
+    issue = await db.issues.find_one({"id": payload.issue_id, "resident_id": resident["id"]}, {"_id": 0})
+    if not issue:
+        raise HTTPException(status_code=404, detail="Request not found")
+    interactions = await db.interactions.find({"issue_id": payload.issue_id}, {"_id": 0}).sort("created_at", 1).to_list(1000)
+    return {"issue": issue, "interactions": interactions}
+
+
+# ------------------- Answer approval (staff) -------------------
+class ApproveAnswer(BaseModel):
+    answer: str
+
+
+@api_router.post("/issues/{issue_id}/approve-answer")
+async def approve_answer(issue_id: str, payload: ApproveAnswer, user=Depends(get_current_user)):
+    issue = await db.issues.find_one({"id": issue_id}, {"_id": 0})
+    if not issue:
+        raise HTTPException(status_code=404, detail="Issue not found")
+    answer = payload.answer.strip()
+    if not answer:
+        raise HTTPException(status_code=400, detail="Answer cannot be empty")
+    if issue.get("lane") != "REVIEW" or not issue.get("suggested_response"):
+        raise HTTPException(status_code=400, detail="Answer approval is only available for a REVIEW issue that has a suggested response")
+    await db.interactions.insert_one(Interaction(
+        issue_id=issue_id, resident_id=issue["resident_id"], sender="ai", message=answer).model_dump())
+    await db.interactions.insert_one(Interaction(
+        issue_id=issue_id, sender="system", message=f"Suggested answer approved and sent by {user.get('name', 'Staff')}").model_dump())
+    await db.issues.update_one({"id": issue_id}, {"$set": {
+        "lane": "RESOLVE", "status": "resolved", "resolved_at": now_iso(),
+        "auto_response": answer, "answer_confidence": issue.get("answer_confidence") or "high",
+        "suggested_response": None, "human_judgment_required": False, "assigned_team": None,
+        "policy_conflict": False, "conflicting_documents": [],
+        "human_attention_score": 0, "attention_reasons": ["Resolved via approved answer"],
+    }})
+    updated = await db.issues.find_one({"id": issue_id}, {"_id": 0})
+    await enrich_issue(updated)
+    return updated
+
+
+# ------------------- Trend insights (staff) -------------------
+@api_router.get("/insights")
+async def insights(user=Depends(get_current_user)):
+    from collections import Counter
+    issues = await db.issues.find({}, {"_id": 0}).to_list(5000)
+    repeat = [i for i in issues if (i.get("resolution_attempts") or 0) > 0 or i.get("failed_resolution") or i.get("status") == "reopened" or i.get("repeat_complaint")]
+    by_category = Counter((i.get("category") or "other") for i in repeat)
+    by_unit = Counter(i.get("unit") for i in repeat)
+    weekly = Counter()
+    for i in repeat:
+        try:
+            d = datetime.fromisoformat(i["created_at"])
+            iso = d.isocalendar()
+            weekly[f"{iso[0]}-W{iso[1]:02d}"] += 1
+        except Exception:
+            pass
+    return {
+        "total_repeat": len(repeat),
+        "by_category": [{"name": k, "count": v} for k, v in by_category.most_common(10)],
+        "by_unit": [{"unit": k, "count": v} for k, v in by_unit.most_common(10)],
+        "weekly": [{"week": k, "count": weekly[k]} for k in sorted(weekly.keys())],
+    }
+
+
 @api_router.get("/")
 async def root():
     return {"message": "CloseLoop API"}
