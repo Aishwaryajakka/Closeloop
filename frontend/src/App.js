@@ -19,6 +19,21 @@ import Contact from "@/pages/public/Contact";
 import Privacy from "@/pages/public/Privacy";
 import Terms from "@/pages/public/Terms";
 
+function ScrollToTop() {
+  const { pathname, hash } = useLocation();
+  useEffect(() => {
+    if (hash) {
+      const t = setTimeout(() => {
+        const el = document.getElementById(hash.slice(1));
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 60);
+      return () => clearTimeout(t);
+    }
+    window.scrollTo(0, 0);
+  }, [pathname, hash]);
+  return null;
+}
+
 function ProtectedRoute({ children }) {
   const { user, loading, checkAuth } = useAuth();
   useEffect(() => {
@@ -74,6 +89,7 @@ function App() {
     <div className="App">
       <BrowserRouter>
         <AuthProvider>
+          <ScrollToTop />
           <AppRouter />
           <Toaster position="bottom-right" richColors />
         </AuthProvider>

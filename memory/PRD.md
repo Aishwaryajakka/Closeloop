@@ -93,6 +93,13 @@ Phase 1 (skeleton, NO AI): MVP web app for multifamily property management. Resi
 ## Demo experience polish (2026-06)
 - DemoMode: replaced anonymous progress dots with a numbered workflow step indicator (01 Inbox → 05 Dashboard, clickable, labels collapse on mobile); aligned the shell to CloseLoop blue (logo + primary/exit buttons); applied teal/red semantic palette to the Resolution Memory timeline and softened the failed-resolution panel from saturated orange to pale red. Icons remain lucide SVG (no emoji). Demo logic/sequence unchanged.
 
+## Final contest polish + QA (2026-06)
+- App.js: global ScrollToTop on route change (smooth-scrolls to #hash element when present, else top).
+- PublicLayout: Product dropdown now hides the item matching the current pathname (Overview hidden on /product); "How It Works" points to /product#flow; footer "View Demo" is now a button that launches the demo (was a /contact link); footer logo size standardized.
+- StaffLogin: removed the "← Are you a resident?" CTA link.
+- DemoMode: NEW judge-facing "Submit a resident request" entry on Act 0 — deterministic client-side classifier (classifyDemo, NO backend/LLM call), injects a "You"-tagged row at top of the Act 1 inbox with a lane badge + result banner. Keywords: again/still/emergency→REVIEW, pool/hours/policy/etc→RESOLVE, else→ACTION. Restart clears the custom row. Mobile: control bar wraps (flex-wrap), Act 1 table is overflow-x-auto (min-w 560), submit disabled until all fields filled.
+- QA: iteration_11 frontend 95% pass (all requested polish verified; zero /api calls on demo submit). Fixed the 3 reported mobile/validation items afterward and self-verified.
+
 ## Next Tasks
 - Optional: move lead rate-limit counter to a shared/Mongo TTL store (survives restarts, multi-worker).
 - Optional: split server.py (1686 lines) into routers.

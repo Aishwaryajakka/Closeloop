@@ -85,9 +85,7 @@ export default function StaffLogin() {
           </div>
         </div>
 
-        <a href="/portal" data-testid="back-to-resident-link" className="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors duration-200">
-          ← Are you a resident? Submit a request
-        </a>
+        <div />
       </div>
 
       {/* Right: image */}

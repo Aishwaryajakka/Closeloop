@@ -1,0 +1,32 @@
+{
+  "summary": "Frontend-only verification of CloseLoop contest-final polish. Verified: global scroll-to-top on route change (Pricing/About/Contact all start at scrollY=0), Product dropdown filtering (Overview hidden on /product) + anchor scroll to /product#flow (scrollY=449), footer 'View Demo' button entering demo session and landing on /staff, Staff Login has no resident CTA (0 elements, no '\u2190 Are you a resident?' text) while Google + View Demo Dashboard buttons remain, and the NEW Demo Mode custom resident request feature. Deterministic classifier verified for all 3 required cases: 'leaking again' => REVIEW/Repeat Issue/P1, 'What time does the pool close?' => RESOLVE/Amenity-Policy/P3, 'My air conditioner is broken' => ACTION/Maintenance/P2; 'still not working' => REVIEW. Zero /api network requests fired during submissions (correctly simulated client-side). Custom row appears at TOP of inbox with 'You' tag; result banner shows correct lane badge; Restart clears banner + custom row (back to 6 rows). Existing acts 1-5, step chips (1/2/4), and Auto-play (advanced Act1->2->3 at ~4.5s) all work. Mobile 390x844: header menu toggle works, custom form usable and submits correctly, no document-level horizontal overflow \u2014 but two mobile clipping issues found in the demo shell.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "DemoMode top control bar (mobile 390px)", "issue": "Control bar does not wrap/scroll: 'Restart Demo' is partially off-screen (x=334, w=88) and 'Exit Demo' is fully off-screen (x=430, w=78) at 390px width. A judge on mobile cannot reach Restart/Exit Demo. Consider hiding labels/icons-only, wrapping, or making the bar horizontally scrollable on small screens.", "selector": "[data-testid=\"demo-restart\"], [data-testid=\"demo-exit\"]", "priority": "HIGH"},
+      {"component": "DemoMode Act 1 inbox table (mobile)", "issue": "Table is 589px wide inside a 340px wrapper with overflow-x: hidden, so Category / Received / Status columns are clipped. On mobile the custom 'You' row's lane badge (REVIEW/RESOLVE/ACTION) is invisible in the table \u2014 only the banner shows it. Add overflow-x-auto to the table wrapper or a mobile card layout.", "selector": "[data-testid=\"demo-act1\"] table", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "DemoMode custom request form", "issues": ["Empty submit is a silent no-op: clicking demo-submit-custom with blank fields does nothing and shows no validation message (0 error elements). Add inline validation or disable the button until all fields are filled."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Make the DemoMode top control bar responsive so Restart Demo / Exit Demo are reachable at 390px width.",
+    "Add horizontal scroll (or mobile card layout) to the Act 1 inbox table so lane/status columns are visible on mobile.",
+    "Add validation feedback (or disabled state) for the demo custom request form when fields are empty."
+  ],
+  "critical_code_review_comments": [
+    "DemoMode.jsx classifyDemo(): keyword list order means escalation keywords win over amenity keywords; 'again'/'still' anywhere in text forces REVIEW (e.g., 'What time does the pool close again?' => REVIEW). Acceptable for a scripted demo but note the false-positive risk.",
+    "DemoMode.jsx reads act from window.location.search directly instead of useSearchParams; act deep-link will not react to in-app query changes."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not tested (frontend-only request)", "frontend": "95%"},
+  "seed_data_creation": "None; demo session created via view-demo-dashboard-btn on /staff/login",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "Demo session via [data-testid=view-demo-dashboard-btn] on /staff/login (no credentials needed)",
+  "context_for_next_testing_agent": "All requested contest-polish features pass on desktop 1920x1080 and functionally on mobile. Remaining items are mobile clipping in the DemoMode sticky control bar and the Act 1 table, plus missing empty-form validation. Demo submission confirmed to make zero /api calls.",
+  "rca_of_the_issue": "Mobile clipping is caused by the fixed-row flex header (px-6 h-14 flex justify-between with no wrap/scroll) and the table container using overflow-hidden instead of overflow-x-auto in DemoMode.jsx."
+}

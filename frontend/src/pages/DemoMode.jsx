@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BrandMark } from "@/components/BrandMark";
-import { Check, RotateCcw, ArrowRight, ShieldAlert, Wrench, BookOpen, AlertTriangle, RefreshCw, X, Droplet, Car, Package, Volume2, Building2 } from "lucide-react";
+import { Check, RotateCcw, ArrowRight, ShieldAlert, Wrench, BookOpen, AlertTriangle, RefreshCw, X, Droplet, Car, Package, Volume2, Building2, MessageSquarePlus, Send } from "lucide-react";
 
 const INBOX = [
   { unit: "118", name: "Elena Petrova", msg: "What time does the pool close?", cat: "Amenity", Icon: Building2, cls: "bg-cyan-50 text-cyan-700", time: "9:31 AM", status: "New" },
@@ -11,6 +11,25 @@ const INBOX = [
   { unit: "521", name: "Dana Lee", msg: "The upstairs noise is back again.", cat: "Noise", Icon: Volume2, cls: "bg-amber-50 text-amber-700", time: "9:55 AM", status: "New" },
   { unit: "603", name: "Nathan Brooks", msg: "Water is coming through my ceiling.", cat: "Leak", Icon: Droplet, cls: "bg-red-50 text-red-700", time: "10:02 AM", status: "Urgent" },
 ];
+
+const LANE_META = {
+  RESOLVE: { pill: "bg-emerald-50 text-emerald-700 border-emerald-200", dot: "text-emerald-600" },
+  ACTION: { pill: "bg-blue-50 text-blue-700 border-blue-200", dot: "text-blue-600" },
+  REVIEW: { pill: "bg-amber-50 text-amber-800 border-amber-200", dot: "text-amber-600" },
+};
+
+function classifyDemo(message) {
+  const t = message.toLowerCase();
+  const has = (arr) => arr.some((k) => t.includes(k));
+  if (has(["again", "still", "fire", "smoke", "gas", "flood", "emergency", "no heat", "no water", "break in", "broke in", "unsafe", "injur", "sparking"])) {
+    const repeat = has(["again", "still"]);
+    return { lane: "REVIEW", cat: repeat ? "Repeat Issue" : "Escalation", Icon: repeat ? RotateCcw : ShieldAlert, cls: "bg-red-50 text-red-700", priority: repeat ? "P1" : "P0", note: repeat ? "Recognized as a returning problem — the existing issue is reopened, not duplicated." : "Flagged for immediate human review." };
+  }
+  if (has(["pool", "gym", "hour", "what time", "when ", "guest", "parking", " park", "wifi", "wi-fi", "trash", "quiet", "policy", "amenity", "package", "mail", "lease", "rent due", "office"])) {
+    return { lane: "RESOLVE", cat: "Amenity / Policy", Icon: BookOpen, cls: "bg-teal-50 text-teal-700", priority: "P3", note: "Answered instantly from approved property documents." };
+  }
+  return { lane: "ACTION", cat: "Maintenance", Icon: Wrench, cls: "bg-blue-50 text-blue-700", priority: "P2", note: "Routed to the Maintenance team." };
+}
 
 function Metric({ label, value, accent }) {
   return (
@@ -41,7 +60,29 @@ export default function DemoMode() {
   const startAct = Math.min(Math.max(parseInt(params.get("act") || "0", 10) || 0, 0), 5);
   const [act, setAct] = useState(startAct);
   const [auto, setAuto] = useState(false);
+  const [inbox, setInbox] = useState(INBOX);
+  const [showForm, setShowForm] = useState(false);
+  const [rName, setRName] = useState("");
+  const [rUnit, setRUnit] = useState("");
+  const [rMsg, setRMsg] = useState("");
+  const [customResult, setCustomResult] = useState(null);
   const next = () => setAct((a) => Math.min(a + 1, 5));
+
+  const submitCustom = () => {
+    if (!rName.trim() || !rUnit.trim() || !rMsg.trim()) return;
+    const r = classifyDemo(rMsg);
+    const row = {
+      unit: rUnit.trim(), name: rName.trim(), msg: rMsg.trim(),
+      cat: r.cat, Icon: r.Icon, cls: r.cls,
+      time: new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+      status: r.lane === "REVIEW" ? "Urgent" : "New", isCustom: true, lane: r.lane, priority: r.priority, note: r.note,
+    };
+    setInbox((prev) => [row, ...prev.filter((x) => !x.isCustom)]);
+    setCustomResult(row);
+    setShowForm(false);
+    setRMsg("");
+    setAct(1);
+  };
 
   React.useEffect(() => {
     if (!auto || act === 0 || act >= 5) return;
@@ -52,7 +93,7 @@ export default function DemoMode() {
   return (
     <div className="fixed inset-0 z-50 bg-slate-50 overflow-auto">
       {/* Top control bar */}
-      <div className="sticky top-0 z-10 backdrop-blur-xl bg-white/85 border-b border-slate-200/70 px-6 h-14 flex items-center justify-between">
+      <div className="sticky top-0 z-10 backdrop-blur-xl bg-white/85 border-b border-slate-200/70 px-4 sm:px-6 py-2 sm:py-0 sm:h-14 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-lg bg-brand-700 flex items-center justify-center"><BrandMark className="h-5 w-5 text-white" /></div>
           <span className="font-heading font-extrabold tracking-tight text-slate-900">CloseLoop</span>
@@ -61,7 +102,7 @@ export default function DemoMode() {
         <div className="flex items-center gap-2">
           <button data-testid="demo-jump-act3" onClick={() => setAct(3)} className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-orange-200 text-orange-700 px-3 py-1.5 text-xs font-semibold hover:bg-orange-50 transition-colors duration-200">Jump to reopen moment</button>
           <button data-testid="demo-autoplay" onClick={() => setAuto((v) => !v)} className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors duration-200 ${auto ? "bg-emerald-600 text-white" : "border border-slate-200 text-slate-600 hover:bg-slate-100"}`}>{auto ? "Auto-play: On" : "Auto-play"}</button>
-          <button data-testid="demo-restart" onClick={() => setAct(0)} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors duration-200"><RefreshCw className="h-3.5 w-3.5" /> Restart Demo</button>
+          <button data-testid="demo-restart" onClick={() => { setAct(0); setCustomResult(null); setInbox(INBOX); }} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors duration-200"><RefreshCw className="h-3.5 w-3.5" /> Restart Demo</button>
           <button data-testid="demo-exit" onClick={() => navigate("/staff")} className="inline-flex items-center gap-1.5 rounded-full bg-brand-700 hover:bg-brand-800 text-white px-3 py-1.5 text-xs font-semibold transition-colors duration-200"><X className="h-3.5 w-3.5" /> Exit Demo</button>
         </div>
       </div>
@@ -90,11 +131,48 @@ export default function DemoMode() {
             <h1 className="font-heading text-4xl font-extrabold tracking-tight text-slate-900">See CloseLoop in 2 minutes</h1>
             <p className="mt-3 text-slate-600 max-w-md mx-auto">Watch a batch of resident messages arrive, get sorted automatically, and see what happens when a fixed problem comes back.</p>
             <button data-testid="run-demo-inbox" onClick={next} className="mt-8 inline-flex items-center gap-2 rounded-full bg-brand-700 hover:bg-brand-800 text-white font-semibold px-6 py-3 transition-colors duration-200">Run Demo Inbox <ArrowRight className="h-4 w-4" /></button>
+
+            <div className="mt-8 max-w-md mx-auto">
+              <div className="flex items-center gap-3">
+                <span className="h-px flex-1 bg-slate-200" />
+                <span className="text-xs font-medium text-slate-400">or try it yourself</span>
+                <span className="h-px flex-1 bg-slate-200" />
+              </div>
+              {!showForm ? (
+                <button data-testid="demo-open-custom-form" onClick={() => setShowForm(true)} className="mt-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold px-5 py-2.5 text-sm transition-colors duration-200">
+                  <MessageSquarePlus className="h-4 w-4" /> Submit a resident request
+                </button>
+              ) : (
+                <div data-testid="demo-custom-form" className="mt-4 text-left bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+                  <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">New resident request</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input data-testid="demo-custom-name" value={rName} onChange={(e) => setRName(e.target.value)} placeholder="Your name" className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-700" />
+                    <input data-testid="demo-custom-unit" value={rUnit} onChange={(e) => setRUnit(e.target.value)} placeholder="Unit" className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-700" />
+                  </div>
+                  <textarea data-testid="demo-custom-message" value={rMsg} onChange={(e) => setRMsg(e.target.value)} rows={3} placeholder={'e.g. "The dishwasher you fixed is leaking again."'} className="mt-3 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-brand-700" />
+                  <button data-testid="demo-submit-custom" onClick={submitCustom} disabled={!rName.trim() || !rUnit.trim() || !rMsg.trim()} className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-full bg-brand-700 hover:bg-brand-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-brand-700 text-white font-semibold py-2.5 text-sm transition-colors duration-200">Send to CloseLoop <Send className="h-4 w-4" /></button>
+                  <p className="mt-2 text-xs text-slate-400 text-center">Watch it get triaged and appear in the demo inbox.</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
         {act === 1 && (
           <div className="animate-fade-up" data-testid="demo-act1">
+            {customResult && (
+              <div data-testid="demo-custom-result" className="mb-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm animate-fade-up">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Your request · Unit {customResult.unit}</p>
+                    <p className="mt-1 text-sm text-slate-800">"{customResult.msg}"</p>
+                  </div>
+                  <span className={`shrink-0 inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold ${LANE_META[customResult.lane].pill}`}>{customResult.lane}</span>
+                </div>
+                <p className="mt-2 flex items-center gap-1.5 text-sm text-slate-600"><Check className={`h-4 w-4 ${LANE_META[customResult.lane].dot}`} /> {customResult.note}</p>
+                <p className="mt-1 text-xs text-slate-400">Added to the inbox below — priority {customResult.priority}.</p>
+              </div>
+            )}
             <div className="flex items-end justify-between">
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Act 1 · Resident inbox</p>
@@ -102,8 +180,8 @@ export default function DemoMode() {
               </div>
               <span className="text-xs font-semibold text-slate-500 bg-slate-100 rounded-full px-3 py-1">Live queue</span>
             </div>
-            <div className="mt-5 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-              <table className="w-full text-sm">
+            <div className="mt-5 bg-white rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
+              <table className="w-full min-w-[560px] text-sm">
                 <thead>
                   <tr className="text-[10px] uppercase tracking-widest text-slate-400 text-left border-b border-slate-200 bg-slate-50/60">
                     <th className="py-2.5 px-4 font-bold">Unit / Resident</th>
@@ -114,9 +192,9 @@ export default function DemoMode() {
                   </tr>
                 </thead>
                 <tbody>
-                  {INBOX.map((r, i) => (
-                    <tr key={i} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors animate-fade-up" style={{ animationDelay: `${i * 70}ms` }}>
-                      <td className="py-2.5 px-4"><p className="font-mono font-semibold text-slate-900">{r.unit}</p><p className="text-xs text-slate-500">{r.name}</p></td>
+                  {inbox.map((r, i) => (
+                    <tr key={i} className={`border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors animate-fade-up ${r.isCustom ? "bg-brand-50/50" : ""}`} style={{ animationDelay: `${i * 70}ms` }}>
+                      <td className="py-2.5 px-4"><p className="font-mono font-semibold text-slate-900 flex items-center gap-1.5">{r.unit}{r.isCustom && <span className="text-[9px] font-bold uppercase tracking-widest text-brand-700 bg-brand-100 rounded px-1 py-0.5">You</span>}</p><p className="text-xs text-slate-500">{r.name}</p></td>
                       <td className="text-slate-700 pr-4 max-w-[280px] truncate">{r.msg}</td>
                       <td>
                         <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600">
@@ -125,12 +203,12 @@ export default function DemoMode() {
                         </span>
                       </td>
                       <td className="text-slate-500 whitespace-nowrap">{r.time}</td>
-                      <td className="pr-4"><span className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${r.status === "Urgent" ? "bg-red-50 text-red-700 border-red-200" : "bg-slate-50 text-slate-600 border-slate-200"}`}>{r.status}</span></td>
+                      <td className="pr-4">{r.isCustom ? <span className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-bold ${LANE_META[r.lane].pill}`}>{r.lane}</span> : <span className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${r.status === "Urgent" ? "bg-red-50 text-red-700 border-red-200" : "bg-slate-50 text-slate-600 border-slate-200"}`}>{r.status}</span>}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              <div className="px-4 py-2.5 text-xs text-slate-400 border-t border-slate-100 bg-slate-50/40">Showing 6 of 24 interactions</div>
+              <div className="px-4 py-2.5 text-xs text-slate-400 border-t border-slate-100 bg-slate-50/40">Showing {inbox.length} of 24 interactions</div>
             </div>
             <button onClick={next} className="mt-6 inline-flex items-center gap-2 rounded-full bg-brand-700 hover:bg-brand-800 text-white font-semibold px-6 py-3">Sort the work <ArrowRight className="h-4 w-4" /></button>
           </div>
