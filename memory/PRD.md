@@ -93,6 +93,11 @@ Phase 1 (skeleton, NO AI): MVP web app for multifamily property management. Resi
 ## Demo experience polish (2026-06)
 - DemoMode: replaced anonymous progress dots with a numbered workflow step indicator (01 Inbox → 05 Dashboard, clickable, labels collapse on mobile); aligned the shell to CloseLoop blue (logo + primary/exit buttons); applied teal/red semantic palette to the Resolution Memory timeline and softened the failed-resolution panel from saturated orange to pale red. Icons remain lucide SVG (no emoji). Demo logic/sequence unchanged.
 
+## Homepage visual pass to reference (2026-06)
+- Home.jsx rewritten to match the provided visual reference (ServiceNow-inspired operational clarity, unmistakably CloseLoop): 2-col hero with a dark AI-triage product preview (incoming resident message → glowing indigo/violet orb "CloseLoop is triaging…" → teal/blue/amber lane chips → floating status badge); RESOLVE/ACTION/REVIEW cards with 4px semantic top borders + example→arrow; Resolution Memory timeline (indigo nodes, teal confirm, coral PREVIOUS RESOLUTION FAILED); dark architecture band with highlighted "CloseLoop Intelligence" pill; indigo→violet metrics strip (94% / <2m / 100%); final demo CTA.
+- Brand navy kept as primary; indigo/violet used only as AI/intelligence accents (per DESIGN.md semantics). All icons lucide SVG (no emoji/unicode/material). No routes/auth/demo/API touched; content preserved.
+- Verified desktop + mobile (no horizontal overflow) via screenshots.
+
 ## Final contest polish + QA (2026-06)
 - App.js: global ScrollToTop on route change (smooth-scrolls to #hash element when present, else top).
 - PublicLayout: Product dropdown now hides the item matching the current pathname (Overview hidden on /product); "How It Works" points to /product#flow; footer "View Demo" is now a button that launches the demo (was a /contact link); footer logo size standardized.
