@@ -86,8 +86,20 @@ h1, h2, h3, h4, h5, h6, .font-heading {
     opacity: 1;
     transform: none;
 }
+
+/* Sequential step reveal for the product hero visual + Resolution Memory timeline */
+.seq > * { opacity: 0; }
+.reveal-scope section.reveal-in .seq > * { animation: flow-in 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) forwards; }
+.seq > *:nth-child(1) { animation-delay: 0.15s; }
+.seq > *:nth-child(2) { animation-delay: 0.30s; }
+.seq > *:nth-child(3) { animation-delay: 0.45s; }
+.seq > *:nth-child(4) { animation-delay: 0.60s; }
+.seq > *:nth-child(5) { animation-delay: 0.75s; }
+.seq > *:nth-child(6) { animation-delay: 0.90s; }
+.seq > *:nth-child(7) { animation-delay: 1.05s; }
+.seq > *:nth-child(8) { animation-delay: 1.20s; }
 @media (prefers-reduced-motion: reduce) {
     .reveal-scope section { opacity: 1 !important; transform: none !important; transition: none !important; }
-    .flow-stage, .flow-line { animation: none !important; opacity: 1 !important; transform: none !important; }
+    .flow-stage, .flow-line, .seq > * { animation: none !important; opacity: 1 !important; transform: none !important; }
     .animate-fade-up { animation: none !important; }
 }

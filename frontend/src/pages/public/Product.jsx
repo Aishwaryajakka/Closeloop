@@ -76,7 +76,7 @@ export default function Product() {
             </p>
           </div>
           {/* Mini product concept visual */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="seq rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="rounded-xl bg-slate-50 border border-slate-200 px-4 py-3">
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Resident message</p>
               <p className="mt-1 text-sm text-slate-800">"The dishwasher you fixed is leaking again."</p>

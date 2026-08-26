@@ -97,13 +97,13 @@ export default function Home() {
             </p>
             <p className="mt-5 font-heading text-xl font-extrabold text-slate-900">Don't just track tickets. Track resolution.</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="seq rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <Step>Resident: "My kitchen sink is leaking."</Step>
             <Step>CloseLoop routes to Maintenance</Step>
             <Step>Repair completed</Step>
             <Step><span className="text-emerald-700 font-semibold">Resident confirms resolution ✓</span></Step>
             <Step>Three days later: "The sink you fixed is leaking again."</Step>
-            <div className="ml-5 rounded-lg bg-red-600 text-white px-4 py-2.5 flex items-center gap-2">
+            <div className="ml-5 rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-2.5 flex items-center gap-2">
               <RotateCcw className="h-4 w-4" />
               <span className="text-sm font-extrabold tracking-wide">PREVIOUS RESOLUTION FAILED</span>
             </div>
