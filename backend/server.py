@@ -16,6 +16,7 @@ import json
 import re
 from starlette.concurrency import run_in_threadpool
 from emergentintegrations.llm.chat import LlmChat, UserMessage
+from email_utils import send_email
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -580,6 +581,36 @@ async def match_existing_issue(resident_id, new_message):
             "persists": bool(res.get("problem_persists")), "reason": res.get("reason")}
 
 
+_STOPWORDS = {"the", "and", "for", "with", "that", "this", "have", "from", "your", "you", "are", "was",
+              "were", "there", "here", "when", "what", "again", "still", "need", "help", "please", "unit",
+              "apartment", "about", "been", "just", "only", "very", "really", "would", "could", "into"}
+
+
+def _keywords(text):
+    import re
+    return {w for w in re.findall(r"[a-zA-Z]{4,}", (text or "").lower()) if w not in _STOPWORDS}
+
+
+async def deterministic_match(resident_id, new_message):
+    """Same-resident (same-unit) keyword safety net when the AI matcher is slow/unavailable."""
+    candidates = await db.issues.find({"resident_id": resident_id}, {"_id": 0}).sort("created_at", -1).to_list(10)
+    if not candidates:
+        return None
+    nk = _keywords(new_message)
+    if not nk:
+        return None
+    best, best_score = None, 0
+    for c in candidates:
+        overlap = len(nk & (_keywords(c.get("description", "")) | _keywords(c.get("category", ""))))
+        if overlap > best_score:
+            best, best_score = c, overlap
+    if not best or best_score < 1:
+        return None
+    rel = "returned_resolved" if best.get("status") in ("resolved", "confirmation_pending", "reopened") else "same_open"
+    return {"issue": best, "relationship": rel, "persists": True,
+            "reason": f"Same-unit keyword match ({best_score} shared term(s)) — deterministic fallback."}
+
+
 async def build_repeat_complaint(issue):
     inters = await db.interactions.find({"issue_id": issue["id"]}, {"_id": 0}).sort("created_at", 1).to_list(500)
     resident_msgs = [i for i in inters if i["sender"] == "resident"]
@@ -765,6 +796,13 @@ async def get_current_user(request: Request):
     return user
 
 
+def require_staff_write(user=Depends(get_current_user)):
+    """Demo viewers are read-only; block any mutating staff action."""
+    if user.get("is_demo"):
+        raise HTTPException(status_code=403, detail="Demo viewer is read-only. Sign in with staff Google to make changes.")
+    return user
+
+
 # ------------------- Auth routes -------------------
 @api_router.post("/auth/session")
 async def create_session(request: Request, response: Response):
@@ -832,6 +870,25 @@ async def logout(request: Request, response: Response):
     return {"ok": True}
 
 
+@api_router.post("/auth/demo")
+async def demo_login(response: Response):
+    """Isolated, read-only demo session for judges — no Google login, cannot mutate data."""
+    user_id = "demo-viewer"
+    await db.users.update_one({"user_id": user_id}, {"$set": {
+        "user_id": user_id, "email": "demo@closeloop.app", "name": "Demo Viewer",
+        "picture": None, "is_demo": True, "created_at": now_iso(),
+    }}, upsert=True)
+    session_token = f"demo_{uuid.uuid4().hex}"
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=12)
+    await db.user_sessions.insert_one({
+        "user_id": user_id, "session_token": session_token,
+        "expires_at": expires_at.isoformat(), "created_at": now_iso(), "is_demo": True,
+    })
+    response.set_cookie(key="session_token", value=session_token, httponly=True,
+                        secure=True, samesite="none", path="/", max_age=12 * 60 * 60)
+    return await db.users.find_one({"user_id": user_id}, {"_id": 0})
+
+
 # ------------------- Public / Resident routes -------------------
 @api_router.get("/config")
 async def get_config():
@@ -876,6 +933,8 @@ async def create_issue(payload: IssueCreate):
     match = None
     if existing_resident:
         match = await match_existing_issue(resident["id"], message)
+        if not match:
+            match = await deterministic_match(resident["id"], message)
 
     if match:
         target = match["issue"]
@@ -1009,7 +1068,7 @@ async def get_issue(issue_id: str, user=Depends(get_current_user)):
 
 
 @api_router.patch("/issues/{issue_id}")
-async def update_issue(issue_id: str, payload: IssueUpdate, user=Depends(get_current_user)):
+async def update_issue(issue_id: str, payload: IssueUpdate, user=Depends(require_staff_write)):
     issue = await db.issues.find_one({"id": issue_id}, {"_id": 0})
     if not issue:
         raise HTTPException(status_code=404, detail="Issue not found")
@@ -1105,7 +1164,7 @@ async def resident_confirm(issue_id: str, payload: ConfirmPayload):
 
 
 @api_router.post("/issues/{issue_id}/message")
-async def staff_message(issue_id: str, payload: StaffMessage, user=Depends(get_current_user)):
+async def staff_message(issue_id: str, payload: StaffMessage, user=Depends(require_staff_write)):
     issue = await db.issues.find_one({"id": issue_id}, {"_id": 0})
     if not issue:
         raise HTTPException(status_code=404, detail="Issue not found")
@@ -1234,7 +1293,7 @@ class MergePayload(BaseModel):
 
 
 @api_router.post("/incidents/merge")
-async def merge_incident(payload: MergePayload, user=Depends(get_current_user)):
+async def merge_incident(payload: MergePayload, user=Depends(require_staff_write)):
     if len(payload.issue_ids) < 2:
         raise HTTPException(status_code=400, detail="Need at least two issues to merge")
     incident_id = f"inc_{uuid.uuid4().hex[:10]}"
@@ -1274,7 +1333,7 @@ class ApproveAnswer(BaseModel):
 
 
 @api_router.post("/issues/{issue_id}/approve-answer")
-async def approve_answer(issue_id: str, payload: ApproveAnswer, user=Depends(get_current_user)):
+async def approve_answer(issue_id: str, payload: ApproveAnswer, user=Depends(require_staff_write)):
     issue = await db.issues.find_one({"id": issue_id}, {"_id": 0})
     if not issue:
         raise HTTPException(status_code=404, detail="Issue not found")
@@ -1369,6 +1428,109 @@ async def root():
     return {"message": "CloseLoop API"}
 
 
+# ------------------- Leads / Demo requests -------------------
+class LeadCreate(BaseModel):
+    name: str
+    work_email: str
+    company: str
+    job_title: Optional[str] = None
+    num_properties: Optional[str] = None
+    approx_units: Optional[str] = None
+    current_platform: Optional[str] = None
+    interest: Optional[str] = None
+    message: Optional[str] = None
+
+
+class LeadStatus(BaseModel):
+    status: str
+
+
+_lead_hits: dict = {}
+
+
+@api_router.post("/leads")
+async def create_lead(payload: LeadCreate, request: Request):
+    name = (payload.name or "").strip()
+    company = (payload.company or "").strip()
+    work_email = (payload.work_email or "").strip().lower()
+    if not name or not company or not work_email:
+        raise HTTPException(status_code=400, detail="Name, work email and company are required.")
+    local, _, domain = work_email.partition("@")
+    if not local or "." not in domain or not domain.rsplit(".", 1)[-1]:
+        raise HTTPException(status_code=400, detail="Please enter a valid work email.")
+
+    # rate limit AFTER validation, keyed on the forwarded client IP (5/hr)
+    xff = request.headers.get("x-forwarded-for", "")
+    ip = xff.split(",")[0].strip() if xff else (request.client.host if request.client else "unknown")
+    ts = datetime.now(timezone.utc).timestamp()
+    hits = [t for t in _lead_hits.get(ip, []) if ts - t < 3600]
+    if len(hits) >= 5:
+        raise HTTPException(status_code=429, detail="Too many requests. Please try again later.")
+    hits.append(ts)
+    _lead_hits[ip] = hits
+
+    lead = {
+        "id": str(uuid.uuid4()),
+        "name": name, "work_email": work_email, "company": company,
+        "job_title": (payload.job_title or "").strip(),
+        "num_properties": (payload.num_properties or "").strip(),
+        "approx_units": (payload.approx_units or "").strip(),
+        "current_platform": (payload.current_platform or "").strip(),
+        "interest": (payload.interest or "").strip(),
+        "message": (payload.message or "").strip(),
+        "status": "New",
+        "submitted_at": now_iso(),
+    }
+    await db.leads.insert_one(lead)
+
+    # Best-effort admin notification — never break the form if email fails.
+    try:
+        notify = os.environ.get("LEAD_NOTIFY_EMAIL")
+        if notify:
+            from html import escape
+            rows = "".join(
+                f'<tr><td style="padding:4px 12px;color:#64748b;font-size:13px">{escape(k)}</td>'
+                f'<td style="padding:4px 12px;color:#0f172a;font-size:13px"><strong>{escape(v or "-")}</strong></td></tr>'
+                for k, v in [
+                    ("Name", lead["name"]), ("Work email", lead["work_email"]),
+                    ("Company/Property", lead["company"]), ("Job title", lead["job_title"]),
+                    ("Number of properties", lead["num_properties"]), ("Approx. units", lead["approx_units"]),
+                    ("Current platform", lead["current_platform"]), ("Interest", lead["interest"]),
+                    ("Message", lead["message"]), ("Submitted", lead["submitted_at"]),
+                ]
+            )
+            html = (
+                '<table role="presentation" width="100%" style="font-family:Arial,sans-serif">'
+                '<tr><td style="padding:20px">'
+                '<h2 style="color:#1e3a8a;margin:0 0 14px">New CloseLoop Demo Request</h2>'
+                f'<table role="presentation" cellspacing="0" cellpadding="0">{rows}</table>'
+                '<p style="font-size:12px;color:#94a3b8;margin-top:18px">Sent by CloseLoop. '
+                'Reply to this email to reach the prospect directly.</p>'
+                '</td></tr></table>'
+            )
+            subject = f'New CloseLoop Demo Request - {company}'
+            await send_email(to=notify, subject=subject, html=html, reply_to=work_email)
+    except Exception as e:
+        logging.getLogger("server").warning(f"Lead notification email failed: {e}")
+
+    return {"ok": True, "id": lead["id"]}
+
+
+@api_router.get("/leads")
+async def list_leads(user=Depends(require_staff_write)):
+    return await db.leads.find({}, {"_id": 0}).sort("submitted_at", -1).to_list(2000)
+
+
+@api_router.patch("/leads/{lead_id}")
+async def update_lead(lead_id: str, payload: LeadStatus, user=Depends(require_staff_write)):
+    if payload.status not in ("New", "Contacted", "Qualified", "Closed"):
+        raise HTTPException(status_code=400, detail="Invalid status")
+    r = await db.leads.update_one({"id": lead_id}, {"$set": {"status": payload.status}})
+    if r.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    return {"ok": True}
+
+
 # ------------------- Property Knowledge (documents) -------------------
 async def process_document(doc_id, data, ext):
     await db.property_documents.update_one({"id": doc_id}, {"$set": {"processing_status": "processing"}})
@@ -1417,7 +1579,7 @@ async def upload_document(
     name: str = Form(...),
     doc_type: str = Form(...),
     property_id: Optional[str] = Form(None),
-    user=Depends(get_current_user),
+    user=Depends(require_staff_write),
 ):
     ext = (file.filename.rsplit(".", 1)[-1] if "." in file.filename else "").lower()
     if ext not in ALLOWED_EXT:
@@ -1447,7 +1609,7 @@ async def upload_document(
 
 
 @api_router.put("/documents/{doc_id}/replace")
-async def replace_document(doc_id: str, file: UploadFile = File(...), user=Depends(get_current_user)):
+async def replace_document(doc_id: str, file: UploadFile = File(...), user=Depends(require_staff_write)):
     doc = await db.property_documents.find_one({"id": doc_id, "is_deleted": False}, {"_id": 0})
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -1475,7 +1637,7 @@ async def replace_document(doc_id: str, file: UploadFile = File(...), user=Depen
 
 
 @api_router.delete("/documents/{doc_id}")
-async def delete_document(doc_id: str, user=Depends(get_current_user)):
+async def delete_document(doc_id: str, user=Depends(require_staff_write)):
     res = await db.property_documents.update_one(
         {"id": doc_id, "is_deleted": False}, {"$set": {"is_deleted": True}}
     )

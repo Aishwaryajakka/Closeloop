@@ -1,8 +1,10 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Inbox, RefreshCw, ShieldAlert, Layers, Info, ArrowRight } from "lucide-react";
+import { Search, Inbox, RefreshCw, ShieldAlert, Layers, Info, ArrowRight, RotateCcw, Camera } from "lucide-react";
+import html2canvas from "html2canvas";
 import api from "@/lib/api";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 import { STATUS_META, LANE_META, PRIORITY_META, fmtDate, attentionCls, fmtDuration } from "@/lib/constants";
 import IssueDetailSheet from "@/components/IssueDetailSheet";
 import StaffLayout from "@/components/StaffLayout";
@@ -10,69 +12,6 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
-
-function ImpactMetric({ value, label, accent, tip, testid }) {
-  const number = (
-    <p className={`font-heading text-xl font-extrabold tracking-tight leading-none ${accent || "text-slate-900"}`}>{value}</p>
-  );
-  return (
-    <div data-testid={testid} className="min-w-0 sm:flex-1 sm:px-4 sm:first:pl-0">
-      <div className="flex items-center gap-1">
-        {number}
-        {tip && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button type="button" className="text-slate-300 hover:text-slate-500 transition-colors" aria-label="More info">
-                <Info className="h-3 w-3" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-[220px] bg-slate-900 text-slate-100">{tip}</TooltipContent>
-          </Tooltip>
-        )}
-      </div>
-      <p className="mt-1 text-[11px] font-semibold leading-tight text-slate-500">{label}</p>
-    </div>
-  );
-}
-
-function ImpactStrip({ impact }) {
-  const navigate = useNavigate();
-  if (!impact) return null;
-  const timeSavedTip = `Assumes ${impact.assumed_minutes_per_interaction} min of staff time per interaction handled without human review.`;
-  return (
-    <TooltipProvider delayDuration={150}>
-      <div data-testid="impact-strip" className="rounded-xl border border-slate-200 bg-slate-50/60 px-5 py-3.5 shadow-[0_1px_3px_-1px_rgba(15,23,42,0.05)]">
-        <div className="flex items-center gap-2 mb-2.5">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Business Impact</p>
-          <span data-testid="impact-demo-badge" className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-amber-700 bg-amber-100 border border-amber-200 rounded-full px-1.5 py-0.5">
-            Demo Environment
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button type="button" className="text-amber-500 hover:text-amber-700 transition-colors" aria-label="About demo metrics">
-                  <Info className="h-2.5 w-2.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-[240px] bg-slate-900 text-slate-100 normal-case tracking-normal font-medium">
-                Metrics shown here are generated from the CloseLoop demo dataset. Production metrics calculate automatically from actual property activity.
-              </TooltipContent>
-            </Tooltip>
-          </span>
-          <button data-testid="view-impact-link" onClick={() => navigate("/staff/insights")}
-            className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors">
-            View Impact <ArrowRight className="h-3.5 w-3.5" />
-          </button>
-        </div>
-        <div className="grid grid-cols-2 gap-y-3 sm:flex sm:items-stretch sm:divide-x sm:divide-slate-200">
-          <ImpactMetric testid="impact-automation" value={`${impact.automation_rate}%`} label="Handled without management" accent="text-emerald-600" />
-          <ImpactMetric testid="impact-time-saved" value={`${impact.hours_saved}h`} label="Estimated time saved" tip={timeSavedTip} />
-          <ImpactMetric testid="impact-confirmed" value={`${impact.resident_confirmed_rate}%`} label="Resident-confirmed resolution" accent="text-emerald-600" />
-          <ImpactMetric testid="impact-repeat" value={impact.repeat_complaints} label="Repeat issues detected" accent="text-amber-600" />
-          <ImpactMetric testid="impact-failed" value={impact.failed_resolutions} label="Failed resolutions surfaced" accent="text-orange-600" />
-        </div>
-      </div>
-    </TooltipProvider>
-  );
-}
 
 function Pill({ meta, testid }) {
   if (!meta) return <span className="text-slate-400 text-sm">—</span>;
@@ -85,10 +24,122 @@ function Pill({ meta, testid }) {
 
 function StatCard({ label, value, testid, accent }) {
   return (
-    <div data-testid={testid} className="bg-white rounded-xl border border-slate-200 p-4 shadow-[0_2px_8px_-2px_rgba(15,23,42,0.06)]">
+    <div data-testid={testid} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
       <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
-      <p className={`mt-1.5 font-heading text-2xl font-extrabold tracking-tight ${accent || "text-slate-900"}`}>{value}</p>
+      <p className={`mt-1.5 font-heading text-2xl font-extrabold tracking-tight tabular-nums ${accent || "text-slate-900"}`}>{value}</p>
     </div>
+  );
+}
+
+// Smoothly tweens to a new value so metrics "tick up" as demo data changes.
+function AnimatedNumber({ value, suffix = "", decimals = 0 }) {
+  const [display, setDisplay] = useState(value ?? 0);
+  const prev = useRef(value ?? 0);
+  useEffect(() => {
+    const start = prev.current;
+    const end = value ?? 0;
+    if (start === end) { setDisplay(end); return; }
+    const dur = 700;
+    const t0 = performance.now();
+    let raf;
+    const tick = (t) => {
+      const p = Math.min((t - t0) / dur, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setDisplay(start + (end - start) * eased);
+      if (p < 1) raf = requestAnimationFrame(tick);
+      else prev.current = end;
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value]);
+  return <>{Number(display).toFixed(decimals)}{suffix}</>;
+}
+
+function ImpactMetric({ value, suffix, decimals, label, accent, tip, testid }) {
+  return (
+    <div data-testid={testid} className="min-w-0 sm:flex-1 sm:px-4 sm:first:pl-0">
+      <div className="flex items-center gap-1">
+        <p className={`font-heading text-3xl font-extrabold tracking-tight leading-none tabular-nums ${accent || "text-slate-900"}`}>
+          <AnimatedNumber value={value} suffix={suffix} decimals={decimals} />
+        </p>
+        {tip && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button type="button" className="text-slate-300 hover:text-slate-500 transition-colors" aria-label="More info">
+                <Info className="h-3 w-3" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-[220px] bg-slate-900 text-slate-100">{tip}</TooltipContent>
+          </Tooltip>
+        )}
+      </div>
+      <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-wide leading-tight text-slate-500">{label}</p>
+    </div>
+  );
+}
+
+function ImpactStrip({ impact }) {
+  const navigate = useNavigate();
+  const stripRef = useRef(null);
+  const [snapping, setSnapping] = useState(false);
+  if (!impact) return null;
+  const timeSavedTip = `Assumes ${impact.assumed_minutes_per_interaction} min of staff time per interaction handled without human review.`;
+
+  const snapshot = async () => {
+    if (!stripRef.current) return;
+    setSnapping(true);
+    try {
+      const canvas = await html2canvas(stripRef.current, { backgroundColor: "#ffffff", scale: 2 });
+      const link = document.createElement("a");
+      link.download = `closeloop-impact-${new Date().toISOString().slice(0, 10)}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+      toast.success("Impact snapshot downloaded.");
+    } catch (e) {
+      toast.error("Could not export snapshot.");
+    } finally {
+      setSnapping(false);
+    }
+  };
+
+  return (
+    <TooltipProvider delayDuration={150}>
+      <div ref={stripRef} data-testid="impact-strip" className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+        <div className="flex items-center gap-2 mb-3">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Business Impact</p>
+          <span data-testid="impact-demo-badge" className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-amber-800 bg-amber-100 border border-amber-200 rounded-full px-1.5 py-0.5">
+            Demo Environment
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button type="button" className="text-amber-500 hover:text-amber-700 transition-colors" aria-label="About demo metrics">
+                  <Info className="h-2.5 w-2.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-[240px] bg-slate-900 text-slate-100 normal-case tracking-normal font-medium">
+                Metrics shown here are generated from the CloseLoop demo dataset. Production metrics calculate automatically from actual property activity.
+              </TooltipContent>
+            </Tooltip>
+          </span>
+          <div className="ml-auto flex items-center gap-3">
+            <button data-testid="impact-snapshot-btn" onClick={snapshot} disabled={snapping}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-900 disabled:opacity-50 transition-colors">
+              <Camera className="h-3.5 w-3.5" /> {snapping ? "Saving…" : "Snapshot"}
+            </button>
+            <button data-testid="view-impact-link" onClick={() => navigate("/staff/insights")}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-brand-700 hover:text-brand-800 transition-colors">
+              View Impact <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-y-4 sm:flex sm:items-stretch sm:divide-x sm:divide-slate-200">
+          <ImpactMetric testid="impact-automation" value={impact.automation_rate} suffix="%" label="Handled without management" accent="text-emerald-600" />
+          <ImpactMetric testid="impact-time-saved" value={impact.hours_saved} suffix="h" decimals={1} label="Estimated time saved" tip={timeSavedTip} />
+          <ImpactMetric testid="impact-confirmed" value={impact.resident_confirmed_rate} suffix="%" label="Resident-confirmed resolution" accent="text-emerald-600" />
+          <ImpactMetric testid="impact-repeat" value={impact.repeat_complaints} label="Repeat issues detected" accent="text-amber-600" />
+          <ImpactMetric testid="impact-failed" value={impact.failed_resolutions} label="Failed resolutions surfaced" accent="text-red-600" />
+        </div>
+      </div>
+    </TooltipProvider>
   );
 }
 
@@ -103,12 +154,21 @@ function rank(i) {
   return r;
 }
 
+// Semantic left-accent so P0 / failed / reopened stand out without over-coloring.
+function cardAccent(i) {
+  if (i.is_emergency || i.failed_resolution) return "border-l-4 border-l-red-500 bg-red-50/60 hover:bg-red-50";
+  if (i.status === "reopened") return "border-l-4 border-l-amber-500 bg-amber-50/50 hover:bg-amber-50";
+  return "border-l-4 border-l-transparent bg-white hover:bg-slate-50";
+}
+
 export default function StaffDashboard() {
+  const { user } = useAuth();
   const [issues, setIssues] = useState([]);
   const [stats, setStats] = useState(null);
   const [impact, setImpact] = useState(null);
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [resetting, setResetting] = useState(false);
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState("Overview");
   const [selectedId, setSelectedId] = useState(null);
@@ -133,6 +193,28 @@ export default function StaffDashboard() {
 
   useEffect(() => { load(); }, []);
 
+  // Live Impact refresh: poll while on Overview so numbers tick up as demo activity arrives.
+  useEffect(() => {
+    if (tab !== "Overview") return;
+    const id = setInterval(async () => {
+      try { const r = await api.get("/impact"); setImpact(r.data); } catch (e) {}
+    }, 4000);
+    return () => clearInterval(id);
+  }, [tab]);
+
+  const resetDemo = async () => {
+    setResetting(true);
+    try {
+      await api.post("/demo/reset");
+      toast.success("Demo data reset to a clean state.");
+      await load();
+    } catch (e) {
+      toast.error("Reset failed.");
+    } finally {
+      setResetting(false);
+    }
+  };
+
   const tabFiltered = useMemo(() => {
     let list = issues;
     if (tab === "REVIEW") list = issues.filter((i) => i.lane === "REVIEW");
@@ -154,6 +236,10 @@ export default function StaffDashboard() {
 
   const headerAction = (
     <div className="flex items-center gap-2">
+      <button data-testid="reset-demo-btn" onClick={resetDemo} disabled={resetting}
+        className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-3.5 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 disabled:opacity-60 transition-colors duration-200">
+        <RotateCcw className={`h-4 w-4 ${resetting ? "animate-spin" : ""}`} /> {resetting ? "Resetting…" : "Reset Demo Data"}
+      </button>
       <a href="/staff/demo" data-testid="run-demo-btn"
         className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 hover:bg-amber-600 text-white px-3.5 py-2 text-sm font-semibold transition-colors duration-200">
         ▶ Run Demo
@@ -171,11 +257,11 @@ export default function StaffDashboard() {
         <p className="text-slate-500 -mt-2">CloseLoop handled the routine. Here's what needs you.</p>
         {/* Shared incident */}
         {incidents.length > 0 && incidents.map((inc, idx) => (
-          <div key={idx} data-testid="shared-incident-banner" className="rounded-xl border-2 border-purple-300 bg-purple-50 p-4 flex items-start gap-3">
-            <Layers className="h-5 w-5 text-purple-600 shrink-0 mt-0.5" />
+          <div key={idx} data-testid="shared-incident-banner" className="rounded-xl border-l-4 border-l-violet-500 border border-violet-200 bg-violet-50 p-4 flex items-start gap-3">
+            <Layers className="h-5 w-5 text-violet-600 shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-bold text-purple-800 uppercase tracking-wide">Possible Shared Incident — {inc.category}</p>
-              <p className="text-sm text-purple-700 mt-0.5">{inc.count} related reports from {inc.resident_count} residents (units {inc.units.slice(0, 6).join(", ")}) within a {inc.window_minutes}-minute window.</p>
+              <p className="text-sm font-bold text-violet-800 uppercase tracking-wide">Possible Shared Incident — {inc.category}</p>
+              <p className="text-sm text-violet-700 mt-0.5">{inc.count} related reports from {inc.resident_count} residents (units {inc.units.slice(0, 6).join(", ")}) within a {inc.window_minutes}-minute window.</p>
             </div>
           </div>
         ))}
@@ -189,7 +275,7 @@ export default function StaffDashboard() {
           <StatCard testid="stat-handled" label="Handled Automatically" value={stats?.handled_automatically ?? "—"} accent="text-emerald-600" />
           <StatCard testid="stat-actions" label="Actions Created" value={stats?.actions_created ?? "—"} accent="text-blue-600" />
           <StatCard testid="stat-reviews" label="Human Reviews" value={stats?.human_reviews ?? "—"} accent="text-amber-600" />
-          <StatCard testid="stat-failed" label="Failed Resolutions" value={stats?.failed_resolutions ?? "—"} accent="text-orange-600" />
+          <StatCard testid="stat-failed" label="Failed Resolutions" value={stats?.failed_resolutions ?? "—"} accent="text-red-600" />
           <StatCard testid="stat-confirmation" label="Confirmation Pending" value={stats?.confirmation_pending ?? "—"} accent="text-violet-600" />
           <StatCard testid="stat-confirmed-rate" label="Confirmed Resolution" value={stats ? `${stats.resident_confirmed_rate}%` : "—"} accent="text-emerald-600" />
           <StatCard testid="stat-median-frt" label="Median First Response" value={stats ? fmtDuration(stats.median_first_response_seconds) : "—"} />
@@ -202,14 +288,14 @@ export default function StaffDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3" data-testid="needs-attention">
               {needsAttention.map((i) => (
                 <button key={i.id} data-testid={`attention-card-${i.id}`} onClick={() => openIssue(i.id)}
-                  className={`text-left rounded-xl border p-4 transition-colors duration-200 ${i.is_emergency ? "border-red-300 bg-red-50 hover:bg-red-100" : i.status === "reopened" ? "border-orange-300 bg-orange-50 hover:bg-orange-100" : "border-slate-200 bg-white hover:bg-slate-50"}`}>
+                  className={`text-left rounded-xl border border-slate-200 p-4 transition-colors duration-200 ${cardAccent(i)}`}>
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className={`h-9 w-9 shrink-0 rounded-lg flex items-center justify-center font-heading font-extrabold text-sm ${attentionCls(i.human_attention_score || 0)}`}>{i.human_attention_score ?? 0}</span>
                       <div className="min-w-0">
                         <p className="font-mono font-semibold text-slate-900 text-sm flex items-center gap-1.5">
                           {i.is_emergency && <ShieldAlert className="h-3.5 w-3.5 text-red-600" />}Unit {i.unit}
-                          {i.status === "reopened" && <span className="text-[10px] font-bold uppercase text-orange-700 bg-orange-100 border border-orange-200 rounded-full px-1.5">Reopened</span>}
+                          {i.status === "reopened" && <span className="text-[10px] font-bold uppercase text-amber-800 bg-amber-100 border border-amber-200 rounded-full px-1.5">Reopened</span>}
                         </p>
                         <p className="text-xs text-slate-500 truncate">{i.resident_name} · {i.category || "—"}</p>
                       </div>
@@ -228,7 +314,7 @@ export default function StaffDashboard() {
         <div className="flex gap-1.5 flex-wrap border-b border-slate-200 pb-3">
           {TABS.map((t) => (
             <button key={t} data-testid={`tab-${t.replace(/\s+/g, "-").toLowerCase()}`} onClick={() => setTab(t)}
-              className={`rounded-full px-3.5 py-2 text-xs font-semibold transition-colors duration-200 ${tab === t ? "bg-slate-900 text-white" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100"}`}>
+              className={`rounded-full px-3.5 py-2 text-xs font-semibold transition-colors duration-200 ${tab === t ? "bg-brand-700 text-white" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100"}`}>
               {t}
             </button>
           ))}
@@ -239,11 +325,11 @@ export default function StaffDashboard() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <input data-testid="dashboard-search" value={query} onChange={(e) => setQuery(e.target.value)}
             placeholder="Search unit, resident, category…"
-            className="w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-1" />
+            className="w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-700 focus:ring-offset-1" />
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-[0_2px_8px_-2px_rgba(15,23,42,0.06)] overflow-hidden">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -261,7 +347,7 @@ export default function StaffDashboard() {
                 ) : (
                   tabFiltered.map((i) => (
                     <TableRow key={i.id} data-testid={`issue-row-${i.id}`} onClick={() => openIssue(i.id)}
-                      className={`cursor-pointer border-slate-100 transition-colors duration-200 ${i.is_emergency ? "bg-red-50 hover:bg-red-100" : i.status === "reopened" ? "bg-orange-50 hover:bg-orange-100" : "hover:bg-slate-50"}`}>
+                      className={`cursor-pointer border-slate-100 transition-colors duration-200 ${i.is_emergency || i.failed_resolution ? "bg-red-50 hover:bg-red-100" : i.status === "reopened" ? "bg-amber-50 hover:bg-amber-100" : "hover:bg-slate-50"}`}>
                       <TableCell><span data-testid={`row-score-${i.id}`} className={`inline-flex items-center justify-center h-7 w-9 rounded-md font-heading font-bold text-xs ${attentionCls(i.human_attention_score || 0)}`}>{i.human_attention_score ?? 0}</span></TableCell>
                       <TableCell className="font-mono font-semibold text-slate-900">
                         <div className="flex items-center gap-1.5">

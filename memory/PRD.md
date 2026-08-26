@@ -59,5 +59,22 @@ Phase 1 (skeleton, NO AI): MVP web app for multifamily property management. Resi
 - Resolution Memory matching is LLM-only (no deterministic fallback) - headline feature depends on Claude availability.
 - Public resident portal fires /api/auth/me -> 401 on load (harmless console noise).
 
+## Visual polish + Productization (2026-06)
+### Design system
+- Restrained deep-blue brand palette added (tailwind `brand.*`, index.css --primary 222 62% 30%). Applied to logo tiles, primary buttons, active nav, focus rings.
+- Semantic colors normalized in constants.js: green=resolved, amber=warning/reopened & REVIEW lane & P1, red=P0/failed, slate=neutral. Needs-Attention cards use left-accent borders; IssueDetail "PREVIOUS RESOLUTION FAILED" now a strong red-header banner. Resident portal + login rebranded.
+- Staff Impact strip: animated count-up numbers, live refresh (polls /api/impact every 4s on Overview), "Snapshot" PNG export (html2canvas), "Reset Demo Data" button (POST /api/demo/reset).
+
+### Commercial layer
+- Public marketing site: routes / (Home), /product, /pricing, /about, /contact, /privacy, /terms with shared PublicLayout (header nav + "View Demo" + footer). Resident portal MOVED to /portal.
+- Read-only Demo login: POST /api/auth/demo mints an isolated is_demo session (no Google). require_staff_write blocks demo (403) on all mutations + /leads. "View Demo" buttons call demoLogin then route to /staff. Sidebar shows DEMO ENVIRONMENT badge; Demo Requests nav hidden for demo; /staff/leads shows not-authorized state for demo.
+- Lead capture: POST /api/leads (public, validated, rate-limited 5/hr via X-Forwarded-For) saves to db.leads; admin notification email to LEAD_NOTIFY_EMAIL via managed Resend (best-effort, never blocks form). Admin Leads view at /staff/leads (GET/PATCH /api/leads, staff-only) with status New/Contacted/Qualified/Closed.
+- Resolution Fallback: deterministic_match() same-unit keyword safety net merges/reopens when the AI matcher returns nothing.
+
+### QA
+- iteration_9: 25/27 backend + 95% frontend pass. Fixed post-QA: rate-limit via X-Forwarded-For (verified 6th=429), reject empty email local part (verified 400), /staff/leads demo guard, /api/auth/me 401 noise skipped on public routes, App.js `React is not defined` runtime error.
+
 ## Next Tasks
+- Optional: move lead rate-limit counter to a shared/Mongo TTL store (survives restarts, multi-worker).
+- Optional: split server.py (1686 lines) into routers.
 - Begin Phase 2 AI intelligence when requested.

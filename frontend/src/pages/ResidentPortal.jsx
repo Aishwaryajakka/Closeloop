@@ -101,7 +101,7 @@ export default function ResidentPortal() {
       <header className="sticky top-0 z-20 backdrop-blur-xl bg-white/80 border-b border-slate-200/60">
         <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-lg bg-slate-900 flex items-center justify-center">
+            <div className="h-9 w-9 rounded-lg bg-brand-700 flex items-center justify-center">
               <BrandMark className="h-5 w-5 text-white" />
             </div>
             <div className="leading-tight">
@@ -209,7 +209,7 @@ export default function ResidentPortal() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Maria Garcia"
-                className="mt-1.5 w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-1"
+                className="mt-1.5 w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-700 focus:ring-offset-1"
               />
             </div>
             <div>
@@ -219,7 +219,7 @@ export default function ResidentPortal() {
                 value={unit}
                 onChange={(e) => setUnit(e.target.value)}
                 placeholder="e.g. 312"
-                className="mt-1.5 w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-1"
+                className="mt-1.5 w-full rounded-lg border border-slate-200 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-700 focus:ring-offset-1"
               />
             </div>
           </div>
@@ -237,7 +237,7 @@ export default function ResidentPortal() {
                   }}
                   rows={4}
                   placeholder="Tell us what's happening in your own words…"
-                  className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-3 text-sm text-slate-900 placeholder:text-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-1"
+                  className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-3 text-sm text-slate-900 placeholder:text-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-brand-700 focus:ring-offset-1"
                 />
                 <p className="mt-1.5 text-xs text-slate-400">e.g. "The sink maintenance fixed yesterday has started leaking again."</p>
               </div>
@@ -246,7 +246,7 @@ export default function ResidentPortal() {
                 data-testid="submit-issue-btn"
                 onClick={submit}
                 disabled={submitting}
-                className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white font-semibold py-3 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2"
+                className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-full bg-brand-700 hover:bg-brand-800 disabled:opacity-60 text-white font-semibold py-3 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand-700 focus:ring-offset-2"
               >
                 {submitting ? "Working…" : "Get Help"} <Send className="h-4 w-4" />
               </button>
@@ -255,7 +255,7 @@ export default function ResidentPortal() {
             <button
               data-testid="track-requests-btn"
               onClick={track}
-              className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2"
+              className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-full bg-brand-700 hover:bg-brand-800 text-white font-semibold py-3 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand-700 focus:ring-offset-2"
             >
               <Search className="h-4 w-4" /> View My Requests
             </button>
@@ -306,7 +306,7 @@ export default function ResidentPortal() {
                         </div>
                       )}
                       {req.status === "reopened" && (
-                        <p data-testid={`resident-reopened-${req.id}`} className="mt-2 text-sm text-orange-700 font-medium">We've reopened your request — a specialist will follow up here shortly.</p>
+                        <p data-testid={`resident-reopened-${req.id}`} className="mt-2 text-sm text-amber-700 font-medium">We've reopened your request — a specialist will follow up here shortly.</p>
                       )}
                       <button data-testid={`toggle-thread-${req.id}`} onClick={() => toggleThread(req.id)}
                         className="mt-2 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors duration-200">

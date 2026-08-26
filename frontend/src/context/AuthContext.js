@@ -8,6 +8,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   const checkAuth = useCallback(async () => {
+    setLoading(true);
     try {
       const res = await api.get("/auth/me");
       setUser(res.data);
@@ -18,10 +19,16 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const PUBLIC_PATHS = ["/", "/product", "/pricing", "/about", "/contact", "/privacy", "/terms"];
+
   useEffect(() => {
     // CRITICAL: If returning from OAuth callback, skip the /me check.
-    // AuthCallback will exchange the session_id and establish the session first.
     if (window.location.hash?.includes("session_id=")) {
+      setLoading(false);
+      return;
+    }
+    // Public marketing pages never need auth — skip the /me call (avoids 401 noise).
+    if (PUBLIC_PATHS.includes(window.location.pathname)) {
       setLoading(false);
       return;
     }
@@ -35,8 +42,14 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const demoLogin = async () => {
+    const res = await api.post("/auth/demo");
+    setUser(res.data);
+    return res.data;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, setUser, loading, checkAuth, logout }}>
+    <AuthContext.Provider value={{ user, setUser, loading, checkAuth, logout, demoLogin }}>
       {children}
     </AuthContext.Provider>
   );

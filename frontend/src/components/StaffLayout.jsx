@@ -1,5 +1,5 @@
 import React from "react";
-import { LogOut, Inbox, BookOpen, TrendingUp } from "lucide-react";
+import { LogOut, Inbox, BookOpen, TrendingUp, Users } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -8,6 +8,7 @@ const NAV = [
   { to: "/staff", label: "Overview", icon: Inbox, testid: "nav-issues" },
   { to: "/staff/knowledge", label: "Knowledge Base", icon: BookOpen, testid: "nav-knowledge" },
   { to: "/staff/insights", label: "Analytics", icon: TrendingUp, testid: "nav-insights" },
+  { to: "/staff/leads", label: "Demo Requests", icon: Users, testid: "nav-leads", staffOnly: true },
 ];
 
 export default function StaffLayout({ title, headerAction, children }) {
@@ -24,15 +25,20 @@ export default function StaffLayout({ title, headerAction, children }) {
     <div className="min-h-screen bg-slate-50 flex">
       <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 p-5">
         <div className="flex items-center gap-2 mb-1">
-          <div className="h-9 w-9 rounded-lg bg-slate-900 flex items-center justify-center">
+          <div className="h-9 w-9 rounded-lg bg-brand-700 flex items-center justify-center">
             <BrandMark className="h-5 w-5 text-white" />
           </div>
           <span className="font-heading font-extrabold tracking-tight text-slate-900">CloseLoop</span>
         </div>
-        <p className="text-[11px] leading-tight text-slate-400 mb-7 pl-0.5">Riverside Luxury Residences</p>
+        <p className="text-[11px] leading-tight text-slate-400 mb-3 pl-0.5">Riverside Luxury Residences</p>
+        {user?.is_demo && (
+          <span data-testid="demo-viewer-badge" className="mb-5 self-start inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-amber-800 bg-amber-100 border border-amber-200 rounded-full px-2 py-0.5">
+            Demo Environment
+          </span>
+        )}
 
         <nav className="space-y-1">
-          {NAV.map((item) => {
+          {NAV.filter((item) => !item.staffOnly || !user?.is_demo).map((item) => {
             const active = location.pathname === item.to;
             const Icon = item.icon;
             return (
@@ -40,7 +46,7 @@ export default function StaffLayout({ title, headerAction, children }) {
                 key={item.to}
                 data-testid={item.testid}
                 onClick={() => navigate(item.to)}
-                className={`w-full flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors duration-200 ${active ? "bg-slate-100 text-slate-900" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`}
+                className={`w-full flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors duration-200 ${active ? "bg-brand-50 text-brand-800" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`}
               >
                 <Icon className="h-4 w-4" /> {item.label}
               </button>

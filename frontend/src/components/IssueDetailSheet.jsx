@@ -227,13 +227,16 @@ export default function IssueDetailSheet({ issueId, open, onOpenChange, onUpdate
 
               {/* Failed resolution banner */}
               {issue.failed_resolution && (
-                <div data-testid="failed-resolution-banner" className="rounded-xl border-2 border-orange-300 bg-orange-50 p-4">
-                  <p className="text-sm font-bold text-orange-800 flex items-center gap-2"><AlertTriangle className="h-4 w-4" /> PREVIOUS RESOLUTION FAILED</p>
-                  <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-orange-900">
-                    <div>Original report: <span className="font-medium">{fmtDate(issue.first_reported_at || issue.created_at)}</span></div>
-                    <div>Resident contacts: <span className="font-medium">{issue.contact_count || 1}</span></div>
-                    <div>Resolution attempts: <span className="font-medium">{issue.resolution_attempts || 0}</span></div>
-                    <div>Previous completion: <span className="font-medium">{fmtDate(issue.previous_resolved_at)}</span></div>
+                <div data-testid="failed-resolution-banner" className="rounded-xl border border-red-300 bg-white overflow-hidden shadow-sm">
+                  <div className="bg-red-600 text-white px-4 py-2.5 flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    <p className="text-sm font-extrabold tracking-wide">PREVIOUS RESOLUTION FAILED</p>
+                  </div>
+                  <div className="p-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-slate-600">
+                    <div>Original report: <span className="font-semibold text-slate-900">{fmtDate(issue.first_reported_at || issue.created_at)}</span></div>
+                    <div>Resident contacts: <span className="font-semibold text-slate-900">{issue.contact_count || 1}</span></div>
+                    <div>Resolution attempts: <span className="font-semibold text-slate-900">{issue.resolution_attempts || 0}</span></div>
+                    <div>Previous completion: <span className="font-semibold text-slate-900">{fmtDate(issue.previous_resolved_at)}</span></div>
                   </div>
                 </div>
               )}

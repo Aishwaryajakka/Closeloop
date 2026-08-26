@@ -1,109 +1,89 @@
 {
-  "theme": "Light theme preferred for clear, professional property management SaaS aesthetic. Ensures high trust, readability, and a non-clinical feel.",
-  "typography": {
-    "font_family": {
-      "heading": "Manrope, sans-serif",
-      "body": "Inter, sans-serif",
-      "mono": "JetBrains Mono, monospace"
-    },
-    "hierarchy": {
-      "h1": "text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900",
-      "h2": "text-2xl md:text-3xl font-bold tracking-tight text-slate-800",
-      "h3": "text-xl font-semibold tracking-tight text-slate-800",
-      "h4": "text-lg font-semibold tracking-tight text-slate-800",
-      "body": "text-base font-normal leading-relaxed text-slate-600",
-      "small": "text-sm font-medium text-slate-500",
-      "label": "text-xs font-bold uppercase tracking-widest text-slate-400"
-    }
+  "brand": {
+    "name": "CloseLoop + Riverside Luxury Residences",
+    "style_ethos": "Professional B2B SaaS, restrained premium feel, highly readable."
   },
   "colors": {
-    "background": {
-      "default": "bg-slate-50",
-      "surface": "bg-white",
-      "chat_bubble_resident": "bg-slate-900 text-white",
-      "chat_bubble_system": "bg-slate-100 text-slate-900"
+    "primary": "Restrained deep-blue (HSL: 222.2 47.4% 11.2%)",
+    "surfaces": "Neutral slate/gray",
+    "semantic": {
+      "success": "Green (emerald) ONLY for resolved/successful states",
+      "warning": "Amber ONLY for warnings/reopened",
+      "critical": "Red (rose/red) ONLY for P0/failed resolutions"
     },
-    "primary": {
-      "default": "bg-slate-900",
-      "hover": "hover:bg-slate-800",
-      "text": "text-white"
-    },
-    "text": {
-      "primary": "text-slate-900",
-      "secondary": "text-slate-600",
-      "muted": "text-slate-400"
-    },
-    "status": {
-      "open": "bg-amber-100 text-amber-800 border-amber-200",
-      "in_progress": "bg-blue-100 text-blue-800 border-blue-200",
-      "resolved": "bg-emerald-100 text-emerald-800 border-emerald-200",
-      "urgent": "bg-red-100 text-red-800 border-red-200"
-    },
-    "border": "border-slate-200",
-    "forbidden_colors": ["#1B93A4", "teal green", "teal blue"]
-  },
-  "visual_enhancers": {
-    "shadows": {
-      "sm": "shadow-sm",
-      "card": "shadow-[0_2px_8px_-2px_rgba(15,23,42,0.08)]",
-      "floating": "shadow-[0_12px_32px_-4px_rgba(15,23,42,0.12)]"
-    },
-    "borders": {
-      "radius_default": "rounded-lg",
-      "radius_chat": "rounded-2xl",
-      "radius_button": "rounded-full"
-    },
-    "glassmorphism": "backdrop-blur-xl bg-white/80 border-b border-slate-200/50"
-  },
-  "component_strategies": {
-    "data_table": "Use Shadcn Table. Features: sticky header, left-aligned text, right-aligned numbers. Badges for Status/Priority. Inline row hover actions. Use neutral borders (`border-slate-200`). Ensure dense view for data scannability.",
-    "chat_interface": "Resident view. Bottom sticky input area (textarea + submit). Bubbles for history. Resident messages on the right (slate-900), System/Staff messages on the left (slate-100). Clean borders. Max-width constraints to maintain readability.",
-    "sidebar": "Staff view. Narrow vertical sidebar (`w-64`) with clear icon+text links. `bg-white` with right border `border-slate-200`.",
-    "badges": "Pill-shaped (`rounded-full`) with soft background colors and darker text for readability (e.g. status/lanes).",
-    "detail_panel": "Use a sliding Side Panel (Shadcn Sheet) for issue details to keep context of the table. Include a vertical timeline for interaction history.",
-    "login_screen": "Split screen layout: Left side clean login form (Google SSO button prominent), Right side high-quality property image."
-  },
-  "grids_and_layouts": {
-    "dashboard": "High Density Grid. Sidebar + Main Content area. Table takes full width of main area (`flex-1`). Strict alignment, 100% pixel utilization.",
-    "resident_form": "Mobile-first centered layout. Max width `max-w-2xl` for chat interface. Generous padding (`p-6` or `p-8`), floating above the background."
-  },
-  "motion_and_interactions": {
-    "hover_states": "Subtle background shifts (e.g., `hover:bg-slate-100` on rows) and icon color changes. Must explicitly set text color on hover.",
-    "transitions": "Use specific transitions: `transition-colors duration-200`, `transition-transform duration-200 ease-out`. Never use `transition-all`.",
-    "chat_entry": "Staggered fade-up animation for new chat bubbles.",
-    "sheet_slide": "Smooth transform for the detail view sliding from the right."
-  },
-  "accessibility": {
-    "contrast": "Ensure all text meets at least 4.5:1 ratio. No light gray text on white backgrounds.",
-    "forms": "All inputs must have associated labels. Chat input must handle Enter/Shift+Enter properly.",
-    "testing": "All interactive elements MUST include `data-testid` (e.g., `data-testid=\"submit-issue-btn\"`, `data-testid=\"staff-login-btn\"`).",
-    "focus": "Clear focus rings: `focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2`."
-  },
-  "media_and_icons": {
-    "icon_library": "lucide-react (clean, minimal, standard for Shadcn).",
-    "images": {
-      "login_background": {
-        "url": "https://images.unsplash.com/photo-1624204386084-dd8c05e32226?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzR8MHwxfHNlYXJjaHwyfHxtb2Rlcm4lMjBhcGFydG1lbnQlMjBidWlsZGluZyUyMGV4dGVyaW9yfGVufDB8fHx8MTc4NzcyMTE0Nnww&ixlib=rb-4.1.0&q=85",
-        "description": "A modern apartment building with glass balconies reflecting a soft pink sky (used for the staff login right-side panel)."
-      }
+    "css_variables": {
+      "--background": "0 0% 100%",
+      "--foreground": "222.2 47.4% 11.2%",
+      "--muted": "210 40% 96.1%",
+      "--muted-foreground": "215.4 16.3% 46.9%",
+      "--popover": "0 0% 100%",
+      "--popover-foreground": "222.2 47.4% 11.2%",
+      "--card": "0 0% 100%",
+      "--card-foreground": "222.2 47.4% 11.2%",
+      "--border": "214.3 31.8% 91.4%",
+      "--input": "214.3 31.8% 91.4%",
+      "--primary": "222.2 47.4% 11.2%",
+      "--primary-foreground": "210 40% 98%",
+      "--secondary": "210 40% 96.1%",
+      "--secondary-foreground": "222.2 47.4% 11.2%",
+      "--accent": "210 40% 96.1%",
+      "--accent-foreground": "222.2 47.4% 11.2%",
+      "--destructive": "0 84.2% 60.2%",
+      "--destructive-foreground": "210 40% 98%",
+      "--ring": "222.2 47.4% 11.2%",
+      "--radius": "0.5rem"
     }
   },
-  "instructions_to_main_agent": [
-    "Build the UI focusing on a clean, professional property management SaaS feel using the specified Slate/Indigo neutral theme.",
-    "For the Resident side, build a chat-style interface. Do not require login. Prompt for name, unit, message, and optional category in a conversational flow or a simple form that mimics chat bubbles. Allow them to see submitted requests status.",
-    "For the Staff side, build a data-heavy dashboard with Shadcn table. Include columns: Unit, Resident, Category, Priority, Lane, Status, Assigned team, Created time.",
-    "Use a Slide-over (Sheet) for the Staff Issue Detail View, featuring a timeline of interactions and status/lane/team update dropdowns.",
-    "Adhere strictly to the color palette (slate variants). Teal is completely forbidden for this dashboard.",
-    "Ensure all buttons, inputs, and links have a `data-testid` attribute for automated testing.",
-    "Use sonner for toast notifications.",
-    "Implement Google Login screen for the staff side (UI only)."
-  ],
-  "universal_guidelines": [
-    "Avoid generic centered layouts except for the resident chat container which should be max-width centered.",
-    "Do not use generic transitions like 'transition: all'. Explicitly define properties.",
-    "Never use fully transparent backgrounds on overlays/dropdowns. Use glassmorphism or solid backgrounds.",
-    "Create depth using the defined subtle shadows and borders, avoiding flat 'AI slop' aesthetics.",
-    "Provide empty states for data tables using illustrations or clear typography.",
-    "Ensure generous padding (`p-6` to `p-12`) inside major container blocks."
+  "typography": {
+    "font_family": "Inter, sans-serif (Replace Manrope/JetBrains where unnecessary)",
+    "headings": "font-bold tracking-tight text-slate-900",
+    "body": "text-slate-600 text-sm",
+    "numbers": "font-semibold tracking-tight (Do not use monospace for standard metrics)"
+  },
+  "constants_updates": {
+    "file": "/app/frontend/src/lib/constants.js",
+    "styles": {
+      "RESOLVED": "bg-emerald-50 text-emerald-700 border border-emerald-200",
+      "REOPENED": "bg-amber-50 text-amber-700 border border-amber-200",
+      "WARNING": "bg-amber-50 text-amber-700 border border-amber-200",
+      "P0_EMERGENCY": "bg-red-50 text-red-700 border border-red-200 font-semibold",
+      "FAILED": "bg-red-50 text-red-700 border border-red-200",
+      "ACTION": "bg-blue-50 text-blue-700 border border-blue-200",
+      "REVIEW": "bg-slate-50 text-slate-700 border border-slate-200"
+    }
+  },
+  "screen_refinements": {
+    "resident_portal": {
+      "layout": "Maintain two-column layout. Tighten spacing (reduce padding/margins that cause excessive empty space).",
+      "visual_anchor": "Make 'How can we help?' text-4xl font-extrabold tracking-tight as the clear anchor. Tagline: 'Report once. Stay informed. Get resolved.' text-slate-500.",
+      "request_card": "Elevate with bg-white border border-slate-200 shadow-sm rounded-xl p-6. Add hover:shadow-md.",
+      "form": "Proper input hierarchy. Labels text-sm font-medium text-slate-700. Clean bordered inputs focus:ring-2 focus:ring-primary."
+    },
+    "staff_dashboard": {
+      "structure": "Keep existing tabbed table and layout.",
+      "business_impact_strip": "Strong hierarchy. Value: text-3xl font-bold tracking-tight text-slate-900. Label: text-xs font-semibold text-slate-500 uppercase tracking-wider.",
+      "demo_badge": "bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider inline-flex items-center.",
+      "needs_attention": "Visually distinguish states. For P0/Failed, add border-l-4 border-l-red-500. For reopened, border-l-4 border-l-amber-500."
+    },
+    "issue_detail": {
+      "previous_resolution_failed": "Make this banner high-impact: bg-red-600 text-white p-3 rounded-lg font-semibold text-sm shadow-sm flex items-center gap-2.",
+      "timeline": "Polished resolution timeline. Use continuous vertical line (border-l-2 border-slate-200) with small status-colored dots."
+    },
+    "login": {
+      "secondary_link": "Style 'View Demo Dashboard →' cleanly: text-sm font-medium text-slate-500 hover:text-slate-900 underline underline-offset-4 transition-colors."
+    }
+  },
+  "components": {
+    "cards": "bg-card text-card-foreground border border-slate-200 shadow-sm rounded-xl",
+    "buttons": "Standardize border-radius to rounded-md. Keep primary buttons solid deep-blue.",
+    "badges": "Pill-shaped (rounded-full) or small rects (rounded) with subtle background tints and solid text/borders."
+  },
+  "universal_guidelines_for_main_agent": [
+    "All interactive and key informational elements MUST include a data-testid attribute.",
+    "DO NOT use complete transparent backgrounds for any overlays, headers, or dropdowns.",
+    "Strictly polish the UI; do NOT rebuild existing screen structures or add new functionalities.",
+    "Ensure transitions on interactive elements like buttons and cards (e.g., hover:shadow-md transition-all).",
+    "Keep color meaningful. Use gray/slate for neutral things, and reserve green, red, amber for actual semantic states.",
+    "Do not invent new SVGs or logos; lightly adjust typography or layout of the existing CloseLoop + Riverside wordmark."
   ]
 }
