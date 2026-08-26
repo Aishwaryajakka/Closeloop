@@ -15,7 +15,7 @@ export const LANE_META = {
 
 export const PRIORITY_META = {
   P0: { label: "P0", cls: "bg-red-50 text-red-700 border-red-200 font-bold" },
-  P1: { label: "P1", cls: "bg-slate-100 text-slate-700 border-slate-200 font-semibold" },
+  P1: { label: "P1", cls: "bg-amber-50 text-amber-700 border-amber-200 font-semibold" },
   P2: { label: "P2", cls: "bg-slate-50 text-slate-600 border-slate-200" },
   P3: { label: "P3", cls: "bg-slate-50 text-slate-400 border-slate-200" },
 };

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Search, Inbox, RefreshCw, ShieldAlert, Layers, Info, ArrowRight, RotateCcw, Camera, MessageSquare, Sparkles, Wrench, Scale, Clock } from "lucide-react";
+import { Search, Inbox, RefreshCw, ShieldAlert, Layers, Info, ArrowRight, RotateCcw, Camera, MessageSquare, Sparkles, Wrench, Scale, Clock, ShieldCheck } from "lucide-react";
 import html2canvas from "html2canvas";
 import api from "@/lib/api";
 import { toast } from "sonner";
@@ -56,25 +56,16 @@ function AnimatedNumber({ value, suffix = "", decimals = 0 }) {
   return <>{Number(display).toFixed(decimals)}{suffix}</>;
 }
 
-function ImpactMetric({ value, suffix, decimals, label, accent, tip, testid }) {
+function KpiCard({ testid, label, Icon, accent, children, footer, FootIcon }) {
   return (
-    <div data-testid={testid} className="min-w-0 sm:flex-1 sm:px-4 sm:first:pl-0">
-      <div className="flex items-center gap-1">
-        <p className={`font-heading text-3xl font-extrabold tracking-tight leading-none tabular-nums ${accent || "text-slate-900"}`}>
-          <AnimatedNumber value={value} suffix={suffix} decimals={decimals} />
-        </p>
-        {tip && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button type="button" className="text-slate-300 hover:text-slate-500 transition-colors" aria-label="More info">
-                <Info className="h-3 w-3" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-[220px] bg-slate-900 text-slate-100">{tip}</TooltipContent>
-          </Tooltip>
-        )}
+    <div data-testid={testid} className="relative bg-white rounded-xl border border-slate-200 p-5 shadow-[0_2px_10px_-4px_rgba(15,23,42,0.08)] overflow-hidden">
+      <span className={`absolute left-0 inset-y-0 w-1 ${accent.bar}`} />
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 leading-snug max-w-[70%]">{label}</p>
+        <span className={`inline-flex h-9 w-9 items-center justify-center rounded-lg shrink-0 ${accent.iconBg}`}><Icon className={`h-4 w-4 ${accent.iconText}`} strokeWidth={2} /></span>
       </div>
-      <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-wide leading-tight text-slate-500">{label}</p>
+      <p className="mt-3 font-heading text-4xl font-extrabold tracking-tight tabular-nums text-slate-900">{children}</p>
+      {footer && <p className={`mt-2 text-sm font-semibold inline-flex items-center gap-1 ${accent.footText}`}>{FootIcon && <FootIcon className="h-3.5 w-3.5" />}{footer}</p>}
     </div>
   );
 }
@@ -105,7 +96,7 @@ function ImpactStrip({ impact }) {
 
   return (
     <TooltipProvider delayDuration={150}>
-      <div ref={stripRef} data-testid="impact-strip" className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+      <div ref={stripRef} data-testid="impact-strip">
         <div className="flex items-center gap-2 mb-3">
           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Business Impact</p>
           <span data-testid="impact-demo-badge" className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-amber-800 bg-amber-100 border border-amber-200 rounded-full px-1.5 py-0.5">
@@ -132,12 +123,23 @@ function ImpactStrip({ impact }) {
             </button>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-y-4 sm:flex sm:items-stretch sm:divide-x sm:divide-slate-200">
-          <ImpactMetric testid="impact-automation" value={impact.automation_rate} suffix="%" label="Handled without management" accent="text-slate-900" />
-          <ImpactMetric testid="impact-time-saved" value={impact.hours_saved} suffix="h" decimals={1} label="Estimated time saved" tip={timeSavedTip} />
-          <ImpactMetric testid="impact-confirmed" value={impact.resident_confirmed_rate} suffix="%" label="Resident-confirmed resolution" accent="text-teal-600" />
-          <ImpactMetric testid="impact-repeat" value={impact.repeat_complaints} label="Repeat issues detected" accent="text-slate-900" />
-          <ImpactMetric testid="impact-failed" value={impact.failed_resolutions} label="Failed resolutions surfaced" accent="text-red-700" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4" data-testid="impact-kpis">
+          <KpiCard testid="impact-automation" label="Handled without management" Icon={Sparkles} footer="Automated resolution" FootIcon={Sparkles}
+            accent={{ bar: "bg-teal-500", iconBg: "bg-teal-50", iconText: "text-teal-600", footText: "text-teal-600" }}>
+            <AnimatedNumber value={impact.automation_rate} suffix="%" />
+          </KpiCard>
+          <KpiCard testid="impact-time-saved" label="Estimated time saved" Icon={Clock} footer="Daily average" FootIcon={ArrowRight}
+            accent={{ bar: "bg-indigo-500", iconBg: "bg-indigo-50", iconText: "text-indigo-600", footText: "text-indigo-600" }}>
+            <AnimatedNumber value={impact.hours_saved} suffix="h" decimals={1} />
+          </KpiCard>
+          <KpiCard testid="impact-confirmed" label="Resident-confirmed resolution" Icon={ShieldCheck} footer="Consistent" FootIcon={ShieldCheck}
+            accent={{ bar: "bg-amber-500", iconBg: "bg-amber-50", iconText: "text-amber-600", footText: "text-amber-600" }}>
+            <AnimatedNumber value={impact.resident_confirmed_rate} suffix="%" />
+          </KpiCard>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2.5 text-sm">
+          <span data-testid="impact-repeat" className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-slate-600"><RotateCcw className="h-3.5 w-3.5 text-slate-400" /> Repeat issues detected: <b className="text-slate-900 tabular-nums"><AnimatedNumber value={impact.repeat_complaints} /></b></span>
+          <span data-testid="impact-failed" className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-slate-600"><ShieldAlert className="h-3.5 w-3.5 text-red-500" /> Failed resolutions surfaced: <b className="text-red-700 tabular-nums"><AnimatedNumber value={impact.failed_resolutions} /></b></span>
         </div>
       </div>
     </TooltipProvider>
@@ -197,6 +199,7 @@ export default function StaffDashboard() {
   const [resetting, setResetting] = useState(false);
   const [query, setQuery] = useState("");
   const [searchParams] = useSearchParams();
+  const firstName = (user?.name || "").split(" ")[0] || "there";
   const view = searchParams.get("view") || "";
   const VIEW_TO_TAB = { review: "REVIEW", action: "ACTION", resolved: "AI Resolved", failed: "Failed Resolutions", all: "All Issues", needs: "Needs" };
   const tab = VIEW_TO_TAB[view] || "Overview";
@@ -221,6 +224,9 @@ export default function StaffDashboard() {
   };
 
   useEffect(() => { load(); }, []);
+
+  // Sync the table search box with the global top-bar search (?q=).
+  useEffect(() => { setQuery(searchParams.get("q") || ""); }, [searchParams]);
 
   // Live Impact refresh: poll while on Overview so numbers tick up as demo activity arrives.
   useEffect(() => {
@@ -282,9 +288,9 @@ export default function StaffDashboard() {
   );
 
   return (
-    <StaffLayout title={tab === "Overview" ? "Good morning" : ({ REVIEW: "Review", ACTION: "Action", "AI Resolved": "AI Resolved", "Failed Resolutions": "Failed Resolutions", "All Issues": "All Issues", Needs: "Needs Attention" }[tab] || tab)} headerAction={headerAction}>
+    <StaffLayout title={tab === "Overview" ? `Good morning, ${firstName}` : ({ REVIEW: "Review", ACTION: "Action", "AI Resolved": "AI Resolved", "Failed Resolutions": "Failed Resolutions", "All Issues": "All Issues", Needs: "Needs Attention" }[tab] || tab)} headerAction={headerAction}>
       <div className="p-6 md:p-8 space-y-6">
-        {tab === "Overview" && <p className="text-slate-500 -mt-2">CloseLoop handled the routine. Here's what needs you.</p>}
+        {tab === "Overview" && <p className="text-slate-500 -mt-2">Here's what's happening across the property today.</p>}
         {/* Shared incident */}
         {tab === "Overview" && incidents.length > 0 && incidents.map((inc, idx) => (
           <div key={idx} data-testid="shared-incident-banner" className="rounded-xl border-l-2 border-l-brand-700 border border-slate-200 bg-brand-50 p-4 flex items-start gap-3">

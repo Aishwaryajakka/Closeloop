@@ -93,6 +93,13 @@ Phase 1 (skeleton, NO AI): MVP web app for multifamily property management. Resi
 ## Demo experience polish (2026-06)
 - DemoMode: replaced anonymous progress dots with a numbered workflow step indicator (01 Inbox → 05 Dashboard, clickable, labels collapse on mobile); aligned the shell to CloseLoop blue (logo + primary/exit buttons); applied teal/red semantic palette to the Resolution Memory timeline and softened the failed-resolution panel from saturated orange to pale red. Icons remain lucide SVG (no emoji). Demo logic/sequence unchanged.
 
+## Full-app visual pass to ZIP references (2026-06)
+- Applied approved ZIP redesign to the EXISTING app via shared components (no rebuilds, no logic/API changes). Demo (DemoMode) and public Home already matched the references — left untouched.
+- StaffLayout shell: new top bar with global search (?q= wired to All Issues table search), notification bell (→ Needs Attention, red dot when >0) and help; sidebar active state changed to neutral gray + brand left indicator + brand icon. Propagates to every staff route (Overview, all issue queues, Knowledge Base, Analytics).
+- StaffDashboard Overview: Business Impact re-rendered as 3 accent KPI cards (Handled without management/teal, Estimated time saved/indigo, Resident-confirmed resolution/amber) with icon containers + left accent bars, plus repeat/failed chips; greeting personalized ("Good morning, {firstName}") with reference subtitle. Snapshot + View Impact preserved.
+- constants.js: PRIORITY P1 pill → amber (semantic consistency P0 coral / P1 amber / P2-P3 slate). All queue tables (Needs/Review/Action/AI Resolved/Failed/All Issues) use one shared table and inherit this.
+- Verified: Overview, Review table, Analytics, Knowledge shell, Home, Login, Demo render cleanly, no runtime errors, no desktop overflow.
+
 ## Homepage visual pass to reference (2026-06)
 - Home.jsx rewritten to match the provided visual reference (ServiceNow-inspired operational clarity, unmistakably CloseLoop): 2-col hero with a dark AI-triage product preview (incoming resident message → glowing indigo/violet orb "CloseLoop is triaging…" → teal/blue/amber lane chips → floating status badge); RESOLVE/ACTION/REVIEW cards with 4px semantic top borders + example→arrow; Resolution Memory timeline (indigo nodes, teal confirm, coral PREVIOUS RESOLUTION FAILED); dark architecture band with highlighted "CloseLoop Intelligence" pill; indigo→violet metrics strip (94% / <2m / 100%); final demo CTA.
 - Brand navy kept as primary; indigo/violet used only as AI/intelligence accents (per DESIGN.md semantics). All icons lucide SVG (no emoji/unicode/material). No routes/auth/demo/API touched; content preserved.

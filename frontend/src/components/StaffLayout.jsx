@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { LogOut, LayoutDashboard, AlertTriangle, Scale, Wrench, Sparkles, RotateCcw, ListChecks, BookOpen, TrendingUp, Users, Menu, X } from "lucide-react";
+import { LogOut, LayoutDashboard, AlertTriangle, Scale, Wrench, Sparkles, RotateCcw, ListChecks, BookOpen, TrendingUp, Users, Menu, X, Search, Bell, HelpCircle } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 import api from "@/lib/api";
 
 export default function StaffLayout({ title, headerAction, children }) {
@@ -11,6 +12,8 @@ export default function StaffLayout({ title, headerAction, children }) {
   const location = useLocation();
   const [counts, setCounts] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const submitSearch = (e) => { e.preventDefault(); navigate(`/staff?view=all${q.trim() ? `&q=${encodeURIComponent(q.trim())}` : ""}`); };
 
   useEffect(() => {
     api.get("/issues").then((r) => {
@@ -78,8 +81,9 @@ export default function StaffLayout({ title, headerAction, children }) {
                   return (
                     <button key={item.label} data-testid={`nav-${item.label.replace(/\s+/g, "-").toLowerCase()}`}
                       onClick={() => navigate(item.to)}
-                      className={`w-full flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors duration-150 ${item.active ? "bg-brand-50 text-brand-800 font-semibold" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium"}`}>
-                      <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.9} />
+                      className={`relative w-full flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors duration-150 ${item.active ? "bg-slate-100 text-slate-900 font-semibold" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium"}`}>
+                      {item.active && <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-brand-700" />}
+                      <Icon className={`h-[18px] w-[18px] shrink-0 ${item.active ? "text-brand-700" : ""}`} strokeWidth={1.9} />
                       <span className="flex-1 text-left truncate">{item.label}</span>
                       {typeof item.badge === "number" && item.badge > 0 && (
                         <span className={`text-[11px] font-semibold rounded-full px-1.5 min-w-[20px] text-center ${item.active ? "bg-brand-700 text-white" : "bg-slate-100 text-slate-500"}`}>{item.badge}</span>
@@ -139,10 +143,25 @@ export default function StaffLayout({ title, headerAction, children }) {
       )}
 
       <main className="flex-1 min-w-0">
-        <header className="sticky top-0 z-10 backdrop-blur-xl bg-white/80 border-b border-slate-200/60 px-4 md:px-8 py-3 md:py-0 md:h-16 flex flex-wrap items-center gap-2 md:gap-3">
+        <header className="sticky top-0 z-10 backdrop-blur-xl bg-white/85 border-b border-slate-200/70 px-4 md:px-8 py-3 md:py-0 md:h-16 flex flex-wrap items-center gap-2 md:gap-3">
           <button onClick={() => setMobileOpen(true)} data-testid="mobile-nav-toggle" className="md:hidden text-slate-600 p-1"><Menu className="h-6 w-6" /></button>
-          <h1 className="font-heading text-lg md:text-xl font-bold tracking-tight text-slate-900 flex-1 min-w-0 truncate">{title}</h1>
-          <div className="flex items-center gap-2 flex-wrap justify-end">{headerAction}</div>
+          <h1 className="font-heading text-lg md:text-xl font-bold tracking-tight text-slate-900 shrink-0 truncate max-w-[40%] md:max-w-none">{title}</h1>
+          <form onSubmit={submitSearch} className="hidden lg:flex flex-1 max-w-md relative">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input data-testid="global-search" value={q} onChange={(e) => setQ(e.target.value)}
+              placeholder="Search issues, units, or residents…"
+              className="w-full rounded-full bg-slate-100 border border-transparent focus:border-slate-300 focus:bg-white pl-10 pr-4 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none transition-colors" />
+          </form>
+          <div className="flex items-center gap-1 ml-auto lg:ml-0">
+            <button onClick={() => navigate("/staff?view=needs")} data-testid="topbar-bell" aria-label="Needs attention" className="relative p-2 rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors">
+              <Bell className="h-5 w-5" strokeWidth={1.9} />
+              {counts?.needs > 0 && <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-red-500" />}
+            </button>
+            <button onClick={() => toast("Need a hand? Email support@closeloop.app")} data-testid="topbar-help" aria-label="Help" className="p-2 rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors">
+              <HelpCircle className="h-5 w-5" strokeWidth={1.9} />
+            </button>
+          </div>
+          {headerAction && <><span className="hidden md:block h-6 w-px bg-slate-200" /><div className="flex items-center gap-2 flex-wrap justify-end">{headerAction}</div></>}
         </header>
         {children}
       </main>
